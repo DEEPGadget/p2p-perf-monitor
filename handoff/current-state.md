@@ -51,8 +51,9 @@
 | 21 | UI 다이어그램 표기 | 단일 NIC 박스 (미사용 포트 표시 안 함, 가독성 우선) |
 | 22 | 패키징 | **Docker Compose** 채택 (multi-stage Dockerfile, single 컨테이너, systemd wrapper) |
 | 23 | 네트워크 분리 | 관리망(SSH, 192.168.1.x) + RDMA 망(perftest 인자, 25.47.1.x) 별도. ENV `SERVER_{A,B}_HOST` (SSH IP) + `SERVER_{A,B}_RDMA_IP` (RDMA IP) |
-| 24 | 호스트 IP | dg5W: SSH 192.168.1.166 / RDMA 25.47.1.10. dg5R: SSH 192.168.1.94 / RDMA 25.47.1.11 |
+| 24 | 호스트 IP | dg5W: SSH `192.168.1.166` / RDMA `25.47.1.10` / netdev `enp2s0f0np0`. dg5R: SSH `192.168.1.204` / RDMA `25.47.1.11` / netdev `ens7f0np0` |
 | 25 | SSH 초기 setup | install.sh 가 PW(deepgadget)로 ssh-copy-id 1회 → 키 인증 전환. .env 에는 PW 저장 X |
+| 26 | IB → RoCE 전환 완료 | 양쪽 서버 link layer Ethernet, RoCE v2 활성. 인터페이스명 `ib*` → `enp*`/`ens*` |
 
 상세 → 각 문서 참조.
 
@@ -62,9 +63,8 @@
 
 | 항목 | 영향 | 결정 시점 |
 |------|------|----------|
-| **IB → RoCE 모드 전환** (사용자 측 별도 작업) | 측정 가능 여부 자체 | 사용자 환경 작업 후 |
-| **RoCE 전환 후 인터페이스명** (`mlx5_X`) | `.env` `NIC_DEVICE_{A,B}` | RoCE 전환 후 사용자 제공 |
-| RDMA GID index 정확값 | `measurement.md` perftest `-x` 옵션 | RoCE 전환 후 `show_gids` 로 확정 |
+| netdev `enp2s0f0np0`/`ens7f0np0` ↔ `mlx5_X` 매핑 검증 | `.env` `NIC_DEVICE_{A,B}` 정정 | 라이브 첫 검증 시 (`ls /sys/class/net/<iface>/device/infiniband/`) |
+| RDMA GID index 정확값 | `measurement.md` perftest `-x` 옵션 | 라이브 검증 시 `show_gids` |
 | 케이블 종류 세부 (DAC/AOC, 길이) | 운영 문서 | Phase 4 |
 | MLNX_OFED 정확 버전 | 의존성 명시 | 설치 시 |
 | 부스 디스플레이 해상도 (1080p / 4K) | 반응형 정책 | Phase 4 |
