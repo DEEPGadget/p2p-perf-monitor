@@ -11,11 +11,14 @@
 ## SSH 접근
 
 - 인증 방식: **공개키만**. 패스워드 인증 금지
-- 키 경로: `.env` `SSH_KEY_PATH` (절대경로). 권장 `/etc/p2p-monitor/id_ed25519`
+- 키 경로: `.env` `SSH_KEY_PATH`. 권장 `~/.ssh/p2p_monitor_ed25519` (사용자 홈)
+  - 일반 사용자가 setup 시 읽기·생성 가능한 위치
+  - Docker 운영 시 컨테이너에 read-only 마운트
+  - `Settings` 가 `~` 자동 확장 (`expanduser`)
 - 키 파일 권한: 600. 부팅 시 검증, 미충족 시 거부 후 종료
 - known_hosts 검증 필수:
-  - `SSH_KNOWN_HOSTS` 환경변수로 명시 경로
-  - asyncssh: `connect(known_hosts=os.environ['SSH_KNOWN_HOSTS'])`
+  - `SSH_KNOWN_HOSTS` 환경변수 (권장 `~/.ssh/known_hosts_p2p` — 시스템 default와 분리)
+  - asyncssh: `connect(known_hosts=str(settings.ssh_known_hosts))`
   - **`StrictHostKeyChecking=no` 또는 `known_hosts=None` 금지**
 - 키 회전 절차는 운영 문서(`README.md`)에 기록
 - SSH 사용자: 측정 도구 실행에 필요한 최소 권한 계정 (root 비권장, `deepgadget` 정도)
