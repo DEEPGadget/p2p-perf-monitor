@@ -6,7 +6,8 @@ import asyncio
 import math
 import random
 from collections.abc import AsyncIterator
-from datetime import datetime, timezone
+from contextlib import suppress
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import asyncssh
@@ -85,7 +86,7 @@ async def mock_session(req: StartRequest) -> AsyncIterator[MeasurementEvent]:
         bw_peak = bw_avg + random.uniform(0.5, 1.5)  # noqa: S311
 
         yield MeasurementEvent(
-            ts=datetime.now(timezone.utc),
+            ts=datetime.now(UTC),
             msg_size=req.msg_size,
             iterations=None,
             bw_peak_gbps=bw_peak,
@@ -109,7 +110,7 @@ async def _mock_lat_session(req: StartRequest) -> AsyncIterator[MeasurementEvent
     while loop.time() < end:
         lat = 1.5 + random.uniform(0.0, 0.5)  # noqa: S311
         yield MeasurementEvent(
-            ts=datetime.now(timezone.utc),
+            ts=datetime.now(UTC),
             msg_size=8,
             iterations=None,
             bw_peak_gbps=0.0,
@@ -126,17 +127,24 @@ async def _mock_lat_session(req: StartRequest) -> AsyncIterator[MeasurementEvent
 # ─────────────────────────── perftest (실 SSH) ───────────────────────────
 
 
-def _build_ib_write_bw_args(req: StartRequest, settings: Settings, peer_rdma: str | None) -> list[str]:
+def _build_ib_write_bw_args(
+    req: StartRequest, settings: Settings, peer_rdma: str | None
+) -> list[str]:
     """ib_write_bw 명령 인자 (insertion-safe, allowlist 검증된 값만)."""
     args = [
         "ib_write_bw",
-        "-d", settings.nic_device_a if peer_rdma else settings.nic_device_b,
+        "-d",
+        settings.nic_device_a if peer_rdma else settings.nic_device_b,
         "-F",
         "--report_gbits",
-        "-D", str(req.duration_sec),
-        "-x", str(settings.rdma_gid_index),
-        "-s", str(req.msg_size),
-        "-q", str(req.qp_count),
+        "-D",
+        str(req.duration_sec),
+        "-x",
+        str(settings.rdma_gid_index),
+        "-s",
+        str(req.msg_size),
+        "-q",
+        str(req.qp_count),
     ]
     if req.bidir:
         args.append("-b")
@@ -145,22 +153,25 @@ def _build_ib_write_bw_args(req: StartRequest, settings: Settings, peer_rdma: st
     return args
 
 
-def _build_ib_read_lat_args(req: StartRequest, settings: Settings, peer_rdma: str | None) -> list[str]:
+def _build_ib_read_lat_args(
+    req: StartRequest, settings: Settings, peer_rdma: str | None
+) -> list[str]:
     args = [
         "ib_read_lat",
-        "-d", settings.nic_device_a if peer_rdma else settings.nic_device_b,
+        "-d",
+        settings.nic_device_a if peer_rdma else settings.nic_device_b,
         "-F",
-        "-D", str(req.duration_sec),
-        "-x", str(settings.rdma_gid_index),
+        "-D",
+        str(req.duration_sec),
+        "-x",
+        str(settings.rdma_gid_index),
     ]
     if peer_rdma:
         args.append(peer_rdma)
     return args
 
 
-async def _run_perftest(  # noqa: C901, PLR0915
-    req: StartRequest, settings: Settings
-) -> AsyncIterator[MeasurementEvent]:
+async def _run_perftest(req: StartRequest, settings: Settings) -> AsyncIterator[MeasurementEvent]:
     """양쪽 서버에 SSH 로 perftest 동시 실행, client stdout 파싱.
 
     rules/measurement.md §프로세스 라이프사이클 + rules/security.md §SSH 통일.
@@ -169,7 +180,7 @@ async def _run_perftest(  # noqa: C901, PLR0915
     parser = parse_ib_write_bw_line if req.tool == "ib_write_bw" else parse_ib_read_lat_line
     build_args = _build_ib_write_bw_args if req.tool == "ib_write_bw" else _build_ib_read_lat_args
 
-    server_args = build_args(req, settings, peer_rdma=None)            # A: server (인자 없음)
+    server_args = build_args(req, settings, peer_rdma=None)  # A: server (인자 없음)
     client_args = build_args(req, settings, peer_rdma=settings.server_a_rdma_ip)  # B: client
 
     ssh_kwargs = {
@@ -220,12 +231,12 @@ async def _run_perftest(  # noqa: C901, PLR0915
                 proc.terminate()
                 await asyncio.wait_for(proc.wait(), timeout=5.0)
             except (TimeoutError, asyncssh.ProcessError, OSError):
-                with _suppress_all():
+                with suppress(Exception):
                     proc.kill()
         for conn in (client_conn, server_conn):
             if conn is None:
                 continue
-            with _suppress_all():
+            with suppress(Exception):
                 conn.close()
                 await conn.wait_closed()
     # parser 미사용 변수 회피용 참조 (실제로는 위 분기에서 직접 호출)
@@ -235,16 +246,19 @@ async def _run_perftest(  # noqa: C901, PLR0915
 # ─────────────────────────── iperf3 (실 SSH) ───────────────────────────
 
 
-async def _run_iperf3(  # noqa: C901
-    req: StartRequest, settings: Settings
-) -> AsyncIterator[MeasurementEvent]:
+async def _run_iperf3(req: StartRequest, settings: Settings) -> AsyncIterator[MeasurementEvent]:
     """iperf3 -s (Server A) + iperf3 -c -J (Server B). JSON 일괄 파싱."""
     server_args = ["iperf3", "-s", "-p", "5201", "-1"]
     client_args = [
-        "iperf3", "-c", settings.server_a_rdma_ip,
-        "-p", "5201",
-        "-t", str(req.duration_sec),
-        "-P", str(req.iperf3_streams),
+        "iperf3",
+        "-c",
+        settings.server_a_rdma_ip,
+        "-p",
+        "5201",
+        "-t",
+        str(req.duration_sec),
+        "-P",
+        str(req.iperf3_streams),
         "-J",
     ]
     if req.bidir:
@@ -272,25 +286,12 @@ async def _run_iperf3(  # noqa: C901
             yield evt
     finally:
         if server_proc is not None:
-            with _suppress_all():
+            with suppress(Exception):
                 server_proc.terminate()
                 await asyncio.wait_for(server_proc.wait(), timeout=5.0)
         for conn in (client_conn, server_conn):
             if conn is None:
                 continue
-            with _suppress_all():
+            with suppress(Exception):
                 conn.close()
                 await conn.wait_closed()
-
-
-# ─────────────────────────── helper ───────────────────────────
-
-
-class _suppress_all:
-    """모든 예외를 조용히 삼키는 context manager (cleanup 용)."""
-
-    def __enter__(self) -> _suppress_all:
-        return self
-
-    def __exit__(self, *_args: object) -> bool:
-        return True

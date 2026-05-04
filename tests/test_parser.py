@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -11,7 +11,7 @@ from app.parser import parse_ib_read_lat_line, parse_ib_write_bw_line, parse_ipe
 from app.schemas import MeasurementEvent
 
 FIXTURES = Path(__file__).parent / "fixtures"
-FIXED_TS = datetime(2026, 5, 4, 12, 0, 0, tzinfo=timezone.utc)
+FIXED_TS = datetime(2026, 5, 4, 12, 0, 0, tzinfo=UTC)
 
 
 # ─────────────────────────── ib_write_bw ───────────────────────────
@@ -158,9 +158,7 @@ class TestParseIperf3Json:
         assert events[0].bw_avg_gbps == pytest.approx(100.0)
 
     def test_bidir_missing_sum_received_treats_as_zero(self) -> None:
-        text = (
-            '{"intervals": [{"sum_sent": {"bits_per_second": 50000000000.0}}]}'
-        )
+        text = '{"intervals": [{"sum_sent": {"bits_per_second": 50000000000.0}}]}'
         events = parse_iperf3_json(text, bidir=True, ts=FIXED_TS)
         assert len(events) == 1
         assert events[0].bw_avg_gbps == pytest.approx(50.0)

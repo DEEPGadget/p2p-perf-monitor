@@ -2,15 +2,13 @@
 
 from __future__ import annotations
 
-import asyncio
-
 import pytest
 
 from app.runner import mock_session, run_session
 from app.schemas import StartRequest
 
-
-pytestmark = pytest.mark.asyncio
+# pyproject 의 asyncio_mode=auto 가 async 테스트 자동 처리.
+# sync 함수 (Validation 등) 는 mark 적용 안 됨.
 
 
 async def _collect(req: StartRequest, max_events: int = 1000) -> list:
@@ -44,15 +42,16 @@ class TestMockSession:
         assert 350 <= avg_bw <= 396
 
     async def test_bw_capped(self) -> None:
-        req = StartRequest(tool="mock", duration_sec=2)
-        events = await _collect(req)
+        req = StartRequest(tool="mock", duration_sec=5)
+        events = await _collect(req, max_events=20)
+        assert len(events) > 0
         # cap 199 (UNI)
         assert all(e.bw_avg_gbps <= 199.0 for e in events)
         assert all(e.bw_avg_gbps >= 0.0 for e in events)
 
     async def test_event_schema_fields(self) -> None:
-        req = StartRequest(tool="mock", duration_sec=1)
-        events = await _collect(req)
+        req = StartRequest(tool="mock", duration_sec=5)
+        events = await _collect(req, max_events=5)
         assert len(events) > 0
         evt = events[0]
         assert evt.tool_category == "mock"
@@ -61,7 +60,7 @@ class TestMockSession:
         assert evt.msg_size == 65536  # default
 
     async def test_lat_session_yields_lat_us(self) -> None:
-        req = StartRequest(tool="ib_read_lat", duration_sec=1)
+        req = StartRequest(tool="ib_read_lat", duration_sec=5)
         # ib_read_lat 은 mock 직접 호출 (run_session 통해서는 mock 분기 X)
         events: list = []
         async for evt in mock_session(req):
@@ -75,7 +74,7 @@ class TestMockSession:
 
 class TestRunSessionDispatch:
     async def test_mock_tool_dispatches_to_mock_session(self) -> None:
-        req = StartRequest(tool="mock", duration_sec=1)
+        req = StartRequest(tool="mock", duration_sec=5)
         events: list = []
         async for evt in run_session(req):
             events.append(evt)
@@ -117,7 +116,7 @@ class TestPerftestLive:
     """실 NIC 환경에서만 동작. CI 기본 제외."""
 
     async def test_ib_write_bw_5s_yields_events(self) -> None:
-        from app.config import Settings  # noqa: PLC0415
+        from app.config import Settings
 
         settings = Settings()  # type: ignore[call-arg]
         req = StartRequest(tool="ib_write_bw", duration_sec=5)

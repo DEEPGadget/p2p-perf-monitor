@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import json
 import sys
 from typing import Any
 
@@ -24,7 +23,9 @@ from app.schemas import StartRequest
 
 
 def _parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     p.add_argument(
         "--tool",
         choices=["ib_write_bw", "ib_read_lat", "iperf3", "mock"],
@@ -67,7 +68,7 @@ async def _main_async() -> int:
     settings = None
     if args.tool != "mock":
         try:
-            from app.config import Settings  # noqa: PLC0415
+            from app.config import Settings
 
             settings = Settings()  # type: ignore[call-arg]
         except Exception as e:

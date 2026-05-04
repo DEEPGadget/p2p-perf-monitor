@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.schemas import MeasurementEvent
 
 # ib_write_bw 데이터 라인:
 #  #bytes  #iterations  BW peak[Gb/sec]  BW average[Gb/sec]  MsgRate[Mpps]
-_IB_BW_LINE = re.compile(
-    r"^\s*(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*$"
-)
+_IB_BW_LINE = re.compile(r"^\s*(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*$")
 
 # ib_read_lat 데이터 라인:
 #  #bytes #iter  t_min  t_max  t_typical  t_avg  t_stdev  99%  99.9%
@@ -27,12 +25,12 @@ _IPERF3_DEFAULT_MSG_SIZE = 131072
 
 
 def _now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 def parse_ib_write_bw_line(
     line: str,
-    bidir: bool = False,  # noqa: ARG001 — bidir 분기 보강 예정 (BIDIR fixture 검증 후)
+    bidir: bool = False,
     ts: datetime | None = None,
 ) -> MeasurementEvent | None:
     """`ib_write_bw` stdout 한 라인 파싱.
@@ -64,9 +62,7 @@ def parse_ib_write_bw_line(
     )
 
 
-def parse_ib_read_lat_line(
-    line: str, ts: datetime | None = None
-) -> MeasurementEvent | None:
+def parse_ib_read_lat_line(line: str, ts: datetime | None = None) -> MeasurementEvent | None:
     """`ib_read_lat` stdout 한 라인 파싱.
 
     bw_peak/bw_avg는 0.0 (lat 측정에선 의미 없음). lat_us = t_avg, lat_p99_us = 99%.
