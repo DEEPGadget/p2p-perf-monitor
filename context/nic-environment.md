@@ -42,23 +42,35 @@ PCIe Gen5 x16 단방향 실효 BW ≈ 256 Gb/s. 두 포트 동시 200G 단방향
 
 ## 네트워크 설정
 
+이중 네트워크 — **관리망**(SSH 제어) + **RDMA 망**(측정 트래픽) 분리.
+
 | 항목 | 값 |
 |------|-----|
-| RoCE 버전 | **v2** (UDP 캡슐화) |
-| GID index | 기본 **3** (RoCE v2 IPv4). `show_gids` 명령으로 확정 |
+| RoCE 버전 | **v2** (UDP 캡슐화) — *현재 환경은 IB 모드, RoCE 모드로 전환 예정* |
+| GID index | 기본 **3** (RoCE v2 IPv4). RoCE 전환 후 `show_gids` 로 확정 |
 | MTU | 기본 9000 (Jumbo) — 스위치도 동일 설정 필요 |
-| PFC / ECN | RoCE 무손실 지원 시 활성. 직결 시 보통 불필요 |
-| IP 대역 | 결정 후 기재 (관리망과 분리 권장) |
+| PFC / ECN | RoCE 무손실 지원 시 활성. 직결이면 보통 불필요 |
+| 관리망 (SSH) | `192.168.1.0/24`. SSH IP: dg5W=`192.168.1.166`, dg5R=`192.168.1.94` |
+| RDMA 망 | `25.47.1.0/24`. RDMA IP: dg5W=`25.47.1.10`, dg5R=`25.47.1.11` |
+
+> **현재 IB 모드 → RoCE 전환 작업** (사용자 측 별도 진행):
+> 1. ConnectX-7 link layer를 Ethernet으로 전환 (`mlxconfig -d <dev> set LINK_TYPE_P1=2`)
+> 2. RoCE v2 활성화, IP 재할당 (25.47.1.x)
+> 3. 인터페이스명 변경됨 (`ib*` → `enp*`/`ens*`). 사용자 제공 후 `.env` 갱신
 
 ## NIC 디바이스 명명
 
 2-port ConnectX-7 환경 기준:
 - 디바이스: `mlx5_0` (포트 1) / `mlx5_1` (포트 2). 2-port NIC라 두 디바이스 모두 노출
-- **사용 포트는 1개**, 양쪽 서버 동일 포트 (예: 둘 다 `mlx5_0`)
-- 인터페이스명: `enp<...>s<...>f<0|1>np<...>` (udev). 사용자 환경에서 확정 후 `.env`에 등록
-- 환경변수 설정:
-  - `NIC_DEVICE_A=mlx5_X` (사용자 제공 후 확정)
-  - `NIC_DEVICE_B=mlx5_X` (A와 동일)
+- **사용 포트는 1개**, 양쪽 서버 동일 포트
+- 인터페이스명 — 현재/예정:
+  | 서버 | 현재 (IB 모드) | RoCE 전환 후 |
+  |------|--------------|-------------|
+  | dg5W | `ibp2s0f0` | TBD (사용자 제공) |
+  | dg5R | `ibs7f0` | TBD (사용자 제공) |
+- 환경변수:
+  - `NIC_DEVICE_A=mlx5_X` — RoCE 전환 후 확정
+  - `NIC_DEVICE_B=mlx5_X` — A와 동일
   - 트랜시버 `ethtool -m`용 netdev명은 `/sys/class/infiniband/<mlx5_X>/device/net/` 에서 자동 매핑
 
 ## 사전 검증 명령

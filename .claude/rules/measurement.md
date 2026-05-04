@@ -28,18 +28,22 @@
 
 ### `ib_write_bw` 양방향 실행
 
+> ⚠️ **SSH IP vs RDMA IP 구분**: controller가 SSH로 접속하는 호스트는 `SERVER_{A,B}_HOST` (관리망 192.168.1.x). 그러나 perftest 명령의 client peer 인자는 **RDMA IP** (`SERVER_{A,B}_RDMA_IP`, RoCE 망 25.47.1.x)를 사용해야 함. 두 망 분리 환경에서 SSH IP를 인자로 넘기면 측정이 관리망으로 흐를 위험.
+
 **Server A (RDMA peer 1)**:
 ```
+# SSH: SERVER_A_HOST 로 접속 (관리망)
 ib_write_bw -d <NIC_DEVICE_A> -F --report_gbits \
             -D <duration_sec> -x <RDMA_GID_INDEX> \
             -s <msg_size> -q <qp_count>
 ```
 
-**Server B (RDMA peer 2, A의 IP를 인자로)**:
+**Server B (RDMA peer 2, A의 RDMA IP 를 인자로)**:
 ```
+# SSH: SERVER_B_HOST 로 접속 (관리망)
 ib_write_bw -d <NIC_DEVICE_B> -F --report_gbits \
             -D <duration_sec> -x <RDMA_GID_INDEX> \
-            -s <msg_size> -q <qp_count> <SERVER_A_HOST>
+            -s <msg_size> -q <qp_count> <SERVER_A_RDMA_IP>
 ```
 
 옵션 의미:

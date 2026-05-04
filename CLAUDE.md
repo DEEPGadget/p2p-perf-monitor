@@ -198,13 +198,15 @@ main 직접 push 금지. 브랜치 명명: `feature/`, `fix/`, `chore/`
 
 | 변수 | 설명 | 예시 |
 |------|------|------|
-| `SERVER_A_HOST` | 서버 A SSH 호스트 (RDMA peer 1) | `10.x.x.10` |
-| `SERVER_B_HOST` | 서버 B SSH 호스트 (RDMA peer 2) | `10.x.x.11` |
+| `SERVER_A_HOST` | 서버 A SSH IP (관리망) | `192.168.1.166` |
+| `SERVER_B_HOST` | 서버 B SSH IP (관리망) | `192.168.1.94` |
+| `SERVER_A_RDMA_IP` | 서버 A RDMA IP (perftest 인자) | `25.47.1.10` |
+| `SERVER_B_RDMA_IP` | 서버 B RDMA IP (perftest 인자) | `25.47.1.11` |
 | `SSH_USER` | SSH 계정 | `deepgadget` |
 | `SSH_KEY_PATH` | SSH private key 절대 경로 | `/etc/p2p-monitor/id_ed25519` |
 | `SSH_KNOWN_HOSTS` | known_hosts 절대 경로 | `/etc/p2p-monitor/known_hosts` |
-| `NIC_DEVICE_A` | Server A NIC 디바이스 | `mlx5_0` |
-| `NIC_DEVICE_B` | Server B NIC 디바이스 | `mlx5_0` |
+| `NIC_DEVICE_A` | Server A NIC 디바이스 (RoCE 전환 후 확정) | `mlx5_0` |
+| `NIC_DEVICE_B` | Server B NIC 디바이스 (A와 동일) | `mlx5_0` |
 | `RDMA_GID_INDEX` | RoCE v2 GID index | `3` |
 | `MEASUREMENT_TOOL` | 카테고리 default — `perftest` \| `iperf3` \| `mock`. API body의 `tool` 필드(서브툴)와 구분 → `.claude/rules/measurement.md` | `perftest` |
 | `BIND_HOST` / `BIND_PORT` | FastAPI 바인드 | `0.0.0.0` / `8080` |
