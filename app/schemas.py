@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 # Allow-listed message sizes for perftest -s option (security.md §입력 검증)
 ALLOWED_MSG_SIZES: tuple[int, ...] = (64, 1024, 8192, 65536, 262144, 1048576)
@@ -48,6 +48,13 @@ class StartRequest(BaseModel):
         if v not in ALLOWED_MSG_SIZES:
             raise ValueError(f"msg_size must be one of {ALLOWED_MSG_SIZES}")
         return v
+
+    @model_validator(mode="after")
+    def _validate_bidir_compat(self) -> StartRequest:
+        # rules/measurement.md: ib_read_lat 은 bidir 의미 없음 → 422
+        if self.bidir and self.tool == "ib_read_lat":
+            raise ValueError("bidir=true is not supported for tool=ib_read_lat")
+        return self
 
 
 class SessionStatus(BaseModel):
