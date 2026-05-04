@@ -76,21 +76,30 @@
 
 1. ✅ **교차검증 1라운드 완료** — arch / impl / harness 3 reviewer 보고 + 피드백 반영 commit (CRITICAL 5건 + HIGH 7건 + 핵심 MEDIUM 4건)
 2. **교차검증 2라운드** — 1라운드 피드백 반영본 재검토
-3. 피드백 반영 PR #1 머지
-4. **Phase 1 시작**: 브랜치 `feature/measurement-poc`
-   - `app/schemas.py` (StartRequest, SessionStatus, MeasurementEvent, NicTelemetry — 정본 → rules/measurement.md)
-   - `app/config.py` (Settings BaseSettings)
-   - `app/parser.py` (ib_write_bw / ib_read_lat / iperf3 — uni + bidir 모두)
-   - `app/runner.py` (asyncssh + mock_session)
-   - `tests/conftest.py` + `tests/fixtures/` (BIDIR fixture 캡처 필수)
-   - `scripts/poc.py` CLI
-   - `.github/workflows/ci.yml` (Phase 2 진입 전에 추가)
+3. ✅ PR #1 머지 (Phase 0)
+4. ✅ PR #2 머지 (2-port NIC 명시)
+5. ✅ PR #3 머지 (네트워크 분리 + Docker 패키징)
+6. ✅ **Phase 1 PoC 작성 완료** (브랜치 `feature/measurement-poc`, 4 commits)
+   - `pyproject.toml` (uv + ruff + pytest)
+   - `app/{__init__,schemas,config,parser,runner}.py`
+   - `tests/{conftest,test_schemas,test_parser,test_runner}.py`
+   - `tests/fixtures/` 6종 (perftest uni/bidir/lat 합성 + iperf3 3종)
+   - `scripts/poc.py` CLI (--tool mock|ib_write_bw|ib_read_lat|iperf3)
+7. **다음**: Phase 1 PR 머지 — 사용자 환경에서 `uv sync` + `pytest tests/ -m "not live"` 검증 후 머지
+8. **(라이브 검증, 옵션)** RoCE 전환 + 인터페이스명 받은 후 실 NIC 환경에서 `pytest -m live` + `python scripts/poc.py --tool ib_write_bw --duration 30` 1회 검증, fixture 보강
+9. **Phase 2 시작**: 브랜치 `feature/api-and-sse`
+   - `app/state.py` (SessionManager + queue fan-out)
+   - `app/nic_telemetry.py` (1Hz 폴링, 별도 SSH pool)
+   - `app/api/{health,measure,stream}.py`
+   - `app/main.py` (lifespan + 라우터 등록)
+   - `.github/workflows/ci.yml` (pytest + ruff)
 
 ---
 
 ## 미처리 이슈
 
-없음 (Phase 0 진행 중, mockup 완료).
+- BIDIR perftest stdout 포맷 미검증 (현재 합산 단일 라인 가정). RoCE 전환 후 실측 fixture 캡처로 보강
+- iperf3 msg_size 필드 default 131072 (실제 -l 옵션 측정값과 일치 여부 확인 필요)
 
 ---
 
