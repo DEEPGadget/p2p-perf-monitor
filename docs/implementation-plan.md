@@ -267,6 +267,7 @@ frontend/
 - Svelte 5 runes API 안정성: 정식 릴리즈 사용 (`svelte@^5`)
 - ECharts dynamic import (SSR 회피): `onMount`에서 import
 - adapter-static + 동적 라우트 없음 → fallback `index.html` 충분
+- **Tailwind CSS v4 + SvelteKit 호환성** — v4는 PostCSS 통합 방식이 v3와 다름. `pnpm create svelte`가 생성하는 기본 `package.json`의 의존성과 충돌 여부를 스캐폴드 직후 검증 필요. 충돌 시 v3로 다운그레이드 검토 (vite-plugin-svelte v4와 안정 조합 우선)
 
 ## 7. Phase 4 — 통합 + 운영
 

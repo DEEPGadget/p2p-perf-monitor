@@ -14,7 +14,7 @@
 - main `eb13e36` initial 골격
 - 작업 브랜치: `chore/phase-0-docs-and-mockup` (PR #1, 미머지)
 - **Phase 0 산출물 완성**:
-  - `CLAUDE.md` (Architecture/Directory/Commands/환경변수)
+  - `CLAUDE.md` (정본 파일 매핑 표 + Architecture/Directory/Commands/환경변수)
   - `.claude/rules/{code-style, api, measurement, frontend, security, testing}.md` 6종
   - `docs/implementation-plan.md` (Phase 0~5 + 모듈 인터페이스)
   - `docs/ui-ux-spec.md` (디자인 시스템 + 와이어프레임 + 모션 timeline)

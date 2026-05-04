@@ -20,11 +20,15 @@ tests/
   test_sse.py            SSE 채널 (이벤트 발행/구독 단위)
   test_state.py          state 머신 (IDLE → RUNNING → IDLE/ERROR)
   fixtures/
-    perftest_ib_write_bw_200g.txt
+    perftest_ib_write_bw_200g_uni.txt    실측 캡처 (단방향)
+    perftest_ib_write_bw_200g_bidir.txt  실측 캡처 (`-b` 옵션, Phase 1 필수)
     perftest_ib_read_lat.txt
-    iperf3_tcp_8streams.json
-    iperf3_failed.json
+    iperf3_tcp_8streams.json             단방향
+    iperf3_tcp_bidir.json                `--bidir` 옵션
+    iperf3_failed.json                   에러 케이스
 ```
+
+> Fixture 목록 정본은 본 파일. `docs/implementation-plan.md` Phase 1 산출물도 동일.
 
 ### 명령
 

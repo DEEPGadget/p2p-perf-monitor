@@ -39,7 +39,7 @@
 event: measurement
 data: {"ts":"2026-05-04T12:00:00Z","msg_size":65536,"iterations":5000,
        "bw_peak_gbps":198.45,"bw_avg_gbps":197.82,"msg_rate_mpps":0.378,
-       "lat_us":null,"lat_p99_us":null,"tool":"perftest","sub_tool":"ib_write_bw"}
+       "lat_us":null,"lat_p99_us":null,"tool_category":"perftest","sub_tool":"ib_write_bw"}
 
 event: nic_temp
 data: {"ts":"2026-05-04T12:00:00Z","server_a_ic_c":62.3,"server_b_ic_c":64.1,
@@ -57,6 +57,7 @@ data: {"code":"ssh_timeout","host":"10.x.x.10","message":"connect timeout 3s"}
 - `nic_temp`: **IDLE/RUNNING 무관 항상 1Hz 발행** — 시스템 health 시각화
 - `status`: 상태 전이 시점에만 (`idle`→`connecting`→`running`→`idle`/`error`)
 - `error`: SSH·측정 도구·텔레메트리 실패 시. 발행 후에도 SSE 채널 유지(다음 시도 가능)
+- **`error` → `idle` 복구 트리거**: ERROR 상태에서도 `/api/stop`은 idempotent 200으로 동작 + 내부 상태를 idle로 리셋. 별도 자동 복구 없음 (사용자가 STOP → START 재시도)
 - 페이로드는 `data:` 1줄 JSON. 멀티라인 금지
 - heartbeat: 15초마다 `: ping\n\n` 코멘트 라인 (연결 유지용)
 

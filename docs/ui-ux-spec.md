@@ -38,8 +38,8 @@
 | `accent` | `#00d9ff` | 시안 강조 (BW 라인, 액티브 상태, glow) |
 | `accent-2` | `#00aacc` | accent 보조 (그라디언트 끝) |
 | `success` | `#22c55e` | RUNNING 배지 |
-| `warning` | `#f59e0b` | 경고 (NIC 온도 75/65°C 임계, BIDIR fallback) |
-| `danger` | `#ef4444` | ERROR 상태 (NIC 온도 85/75°C 임계) |
+| `warning` | `#f59e0b` | 경고 상태 (NIC 온도 임계 정본 → `.claude/rules/measurement.md`) |
+| `danger` | `#ef4444` | ERROR / 위험 상태 (임계 정본 → `.claude/rules/measurement.md`) |
 
 특수 효과:
 - **glow**: `box-shadow: 0 0 24px rgba(0, 217, 255, 0.4)` — 액티브 카드, 그래프 라인
@@ -51,8 +51,8 @@
 |------|------|--------|
 | 헤더 / 브랜드 | Inter Bold (또는 Geist) | 28px |
 | 페이지 타이틀 | Inter Bold | 48px / 4xl |
-| KPI 숫자 (메인) | **JetBrains Mono Bold** | **96px (5em+)** |
-| KPI 단위 | JetBrains Mono Regular | 24px |
+| KPI 숫자 (메인) | **JetBrains Mono Bold** | **72px** (mockup 적용값, §6.4 정본) |
+| KPI 단위 | JetBrains Mono Medium | 20px |
 | KPI 라벨 | Inter Medium uppercase tracking-wider | 12px |
 | 본문 | Inter Regular | 14px |
 | 작은 푸터 | Inter Regular | 12px / muted 색 |

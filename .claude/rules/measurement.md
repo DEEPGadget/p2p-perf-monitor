@@ -169,9 +169,11 @@ class MeasurementEvent(BaseModel):
     msg_rate_mpps: float | None        # iperf3 fallback에선 None
     lat_us: float | None               # ib_read_lat 모드에서만
     lat_p99_us: float | None
-    tool: Literal["perftest", "iperf3", "mock"]
-    sub_tool: Literal["ib_write_bw", "ib_read_lat", "iperf3", "mock"] | None
+    tool_category: Literal["perftest", "iperf3", "mock"]                       # 카테고리
+    sub_tool: Literal["ib_write_bw", "ib_read_lat", "iperf3", "mock"] | None   # 서브툴
 ```
+
+> **명명 규약**: `StartRequest.tool` (= API body 필드) 은 **서브툴**(`ib_write_bw` 등)을 받음. `MeasurementEvent`에서는 동일 이름의 충돌을 피하기 위해 카테고리 필드를 `tool_category`로 명명.
 
 - 단위 통일: 대역폭 Gb/s, 지연 µs, 사이즈 bytes
 - 미지원 필드는 None
