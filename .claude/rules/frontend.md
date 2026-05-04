@@ -16,40 +16,13 @@
 
 ## 디렉터리 구조
 
-```
-frontend/
-  src/
-    routes/
-      +layout.svelte         글로벌 스타일·폰트 로드
-      +page.svelte           메인 단일 페이지
-    lib/
-      components/
-        Header.svelte               로고 PNG + bar + 타이틀
-        StatusBadge.svelte
-        HardwareDiagram.svelte      SVG: 서버×2 + 트랜시버×2 + IC/MOD overlay
-        KpiCards.svelte             BW NOW/AVG/PEAK/LAT
-        BandwidthChart.svelte       ECharts 시계열
-        NicTempPanel.svelte         4 타일 (IC/MOD × dg5W/dg5R) + 4-line 시계열
-        ControlPanel.svelte
-      stores/
-        measurement.svelte.ts       BW 이벤트 store (Svelte 5 runes)
-        nic_telemetry.svelte.ts     NIC IC + Module 4채널 (1Hz)
-        session.svelte.ts           세션 상태 (IDLE/CONNECTING/RUNNING/ERROR)
-      utils/
-        sse.ts
-        format.ts                   숫자 포매팅 (Gbps, µs, °C)
-        api.ts                      POST /api/start, /api/stop
-    app.css                  Tailwind directives + custom CSS vars
-  static/
-    manycore_logo_white.png         다크 헤더용 (현재 사용)
-    manycore_logo_black.png         라이트 배경 대비용 (보관)
-    fonts/                   self-hosted (CDN 미사용)
-  svelte.config.js
-  vite.config.ts
-  tailwind.config.js
-  tsconfig.json
-  package.json
-```
+전체 디렉터리 트리는 정본 → `CLAUDE.md` §Directory.
+
+본 룰은 **`lib/` 하위 코드 작성 컨벤션**만 다룸:
+- `lib/components/<PascalCase>.svelte` — UI 컴포넌트, Svelte 5 runes
+- `lib/stores/<name>.svelte.ts` — runes 기반 store
+- `lib/utils/<name>.ts` — 순수 함수 / 인프라 (SSE, format, api)
+- `lib/types/api.ts` — 백엔드 Pydantic 모델 1:1 TS 타입
 
 ## 코드 룰
 
@@ -69,19 +42,8 @@ frontend/
 
 ### Tailwind
 
-- `tailwind.config.js`에 디자인 토큰 정의:
-  ```js
-  colors: {
-    bg: '#0a0a0a',         // 진한 검정
-    surface: '#141414',
-    border: '#262626',
-    text: '#ffffff',
-    muted: '#a1a1aa',
-    accent: '#00d9ff',     // 시안 강조
-    success: '#22c55e',
-    danger: '#ef4444',
-  }
-  ```
+- 디자인 토큰 정본 → `docs/ui-ux-spec.md` §3 색상 팔레트
+- `tailwind.config.js`에는 정본의 모든 토큰을 1:1 등록 (현재: `bg`, `surface`, `surface-2`, `border`, `text`, `text-2`, `muted`, `accent`, `accent-2`, `success`, `warning`, `danger`)
 - 인라인 임의값(`text-[#abc123]`) 사용 금지. 토큰만 사용
 - 컴포넌트별 `<style>` 블록은 Tailwind로 표현 어려운 효과(드롭섀도우 글로우 등)에만
 
@@ -102,22 +64,13 @@ frontend/
 
 ## SSE 구독 (`lib/utils/sse.ts`)
 
-`/api/stream` 단일 채널에서 4종 이벤트가 발행됨 → 각각 별도 store에 dispatch.
-
-```typescript
-export function subscribe() {
-  const es = new EventSource('/api/stream')
-  es.addEventListener('measurement', (e) => measurementStore.push(JSON.parse(e.data)))
-  es.addEventListener('nic_temp',    (e) => nicTelemetryStore.push(JSON.parse(e.data)))
-  es.addEventListener('status',      (e) => sessionStore.update(JSON.parse(e.data)))
-  es.addEventListener('error',       (e) => sessionStore.setError(JSON.parse(e.data)))
-  return () => es.close()
-}
-```
-
+- `/api/stream` 단일 채널, **4종 이벤트** (`measurement` / `nic_temp` / `status` / `error`)
+- 각 이벤트는 별도 store에 dispatch (measurement / nic_telemetry / session)
 - EventSource 자동 재연결 사용
-- `measurement`: 측정 중에만 발행 (10Hz). `nic_temp`: IDLE/RUNNING 무관 항상 발행 (1Hz)
-- store 구독자가 0이 되면 `es.close()`
+- 발행 주기·payload 정의 → `.claude/rules/api.md` §SSE 포맷
+- store 구독자 0 시 `es.close()`
+
+구체 구현은 `lib/utils/sse.ts`. 본 룰은 인터페이스만 명시(코드 예시는 stale 위험 회피).
 
 ## 빌드 & 정적 서빙
 

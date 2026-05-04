@@ -22,7 +22,9 @@
 
 종합: **cloudflare 식 미니멀 카운터 + nperf 식 그래프 + traceroute 식 흐름 시각화 + Overwatch 식 시네마틱 톤**.
 
-## 3. 색상 팔레트
+## 3. 색상 팔레트 (정본)
+
+본 표가 디자인 토큰의 정본. `frontend/tailwind.config.js`는 본 표를 1:1 등록.
 
 | 토큰 | 값 | 용도 |
 |------|-----|------|
@@ -36,8 +38,8 @@
 | `accent` | `#00d9ff` | 시안 강조 (BW 라인, 액티브 상태, glow) |
 | `accent-2` | `#00aacc` | accent 보조 (그라디언트 끝) |
 | `success` | `#22c55e` | RUNNING 배지 |
-| `warning` | `#f59e0b` | 경고 |
-| `danger` | `#ef4444` | ERROR 상태 |
+| `warning` | `#f59e0b` | 경고 (NIC 온도 75/65°C 임계, BIDIR fallback) |
+| `danger` | `#ef4444` | ERROR 상태 (NIC 온도 85/75°C 임계) |
 
 특수 효과:
 - **glow**: `box-shadow: 0 0 24px rgba(0, 217, 255, 0.4)` — 액티브 카드, 그래프 라인
@@ -152,9 +154,7 @@ KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 확대분 보전)
 - **NIC ↔ Transceiver 짧은 stub 라인**: 항상 표시
 - **패킷 흐름 dot**: 트랜시버 사이 (x: 800 → 1020) cyan dot 5개 stagger 흐름
 
-색상 코딩 (NIC IC overlay + Transceiver Module overlay 공통):
-- IC: < 75°C cyan / 75~85 amber / ≥85 red
-- Module: < 65°C cyan / 65~75 amber / ≥75 red (트랜시버 한계가 더 낮음)
+색상 코딩 (NIC IC overlay + Transceiver Module overlay 공통): 임계값 정본 → `.claude/rules/measurement.md` §임계값 / 색상 코딩.
 
 연결 라인·패킷 흐름 동작:
 - 라벨 "200G RoCE v2 · MTU 9000" 위치: UNI y=148, BIDIR y=138
@@ -208,12 +208,8 @@ NicTempPanel 내부:
    - 범례: 우상단 작게 (4개 항목)
    - X축: BW 차트와 동일한 elapsed time
 
-타일 색상 코딩 표시:
-| 컴포넌트 | 정상 | 경고 | 위험 |
-|---------|------|------|------|
-| IC | < 75°C cyan | 75~85°C amber + 카드 글로우 | ≥85°C red + 강한 글로우 |
-| Module | < 65°C cyan | 65~75°C amber + 카드 글로우 | ≥75°C red + 강한 글로우 |
-| 측정 실패 | "—°C" muted | | |
+타일 색상 코딩: 임계값 정본 → `.claude/rules/measurement.md` §임계값 / 색상 코딩.
+표시 규칙: 정상 cyan, 경고 amber + 카드 글로우, 위험 red + 강한 글로우, 측정 실패 "—°C" muted.
 
 폴링: 1Hz로 항상 동작 (idle/running 무관). 측정 중에는 시계열에 누적 push, IDLE에선 카드만 갱신.
 

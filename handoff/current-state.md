@@ -41,6 +41,12 @@
 | 11 | 호스트 모델 | Server A = `dg5W-H200NVL-4`, Server B = `dg5R-PRO6000SE-10` |
 | 12 | 냉각 | NIC IC + 광 트랜시버 모두 Liquid-Cooled (UI에 명시 표기) |
 | 13 | 회사 로고 | ManyCore PNG (white/black 두 버전, mockup 적용 완료) |
+| 14 | SSH 정책 | controller self-SSH 포함 모든 호출을 SSH로 통일 (subprocess 분기 X). known_hosts 사전 등록 |
+| 15 | NIC 텔레메트리 권한 | 1차 sysfs hwmon (sudo 불필요), 2차 `mget_temp` sudoers NOPASSWD fallback |
+| 16 | NIC 텔레메트리 SSH 풀 | 측정 SSH와 별도 connection — fault isolation |
+| 17 | SSE 큐 정책 | 구독자별 `asyncio.Queue(maxsize=256)` + drop-oldest, 30분 idle timeout |
+| 18 | 명명 규약 | `SessionStatus` (외부 응답 DTO) vs `SessionState` (내부 머신 상태값) 구분 |
+| 19 | 정본 파일 매핑 | CLAUDE.md 상단 표에 카테고리별 단일 정본 명시 (drift 방지) |
 
 상세 → 각 문서 참조.
 
@@ -61,18 +67,17 @@
 
 ## 다음 액션
 
-1. **교차검증 1라운드** — PR #1 또는 별도 검토:
-   - `arch-plan-reviewer`: 단일 controller / SSE / 4채널 텔레메트리 아키텍처 적정성
-   - `impl-plan-reviewer`: Phase 의존 그래프, 모듈 분할(parser/runner/state/nic_telemetry), 인터페이스 일관성
-   - `harness-doc-reviewer`: 룰 6종 + CLAUDE.md + ui-ux-spec + impl-plan 일관성·중복
-2. **피드백 반영 PR** → 머지
-3. (필요 시) 추가 교차검증 라운드
+1. ✅ **교차검증 1라운드 완료** — arch / impl / harness 3 reviewer 보고 + 피드백 반영 commit (CRITICAL 5건 + HIGH 7건 + 핵심 MEDIUM 4건)
+2. **교차검증 2라운드** — 1라운드 피드백 반영본 재검토
+3. 피드백 반영 PR #1 머지
 4. **Phase 1 시작**: 브랜치 `feature/measurement-poc`
-   - `app/schemas.py` (StartRequest, MeasurementEvent, NicTelemetry)
-   - `app/parser.py` (ib_write_bw / ib_read_lat / iperf3 stdout 파싱)
-   - `app/runner.py` (asyncssh, mock_session)
-   - `tests/fixtures/` snapshot
+   - `app/schemas.py` (StartRequest, SessionStatus, MeasurementEvent, NicTelemetry — 정본 → rules/measurement.md)
+   - `app/config.py` (Settings BaseSettings)
+   - `app/parser.py` (ib_write_bw / ib_read_lat / iperf3 — uni + bidir 모두)
+   - `app/runner.py` (asyncssh + mock_session)
+   - `tests/conftest.py` + `tests/fixtures/` (BIDIR fixture 캡처 필수)
    - `scripts/poc.py` CLI
+   - `.github/workflows/ci.yml` (Phase 2 진입 전에 추가)
 
 ---
 
@@ -84,7 +89,7 @@
 
 ## 참고
 
-- 인스펙션 시스템(`projects/inspection-system`)과는 인프라·코드 모두 별개
-- 워크스페이스 룰 (`~/workspace/rules/*.md`)이 본 프로젝트 룰 위에 fallback으로 적용됨
+- 인스펙션 시스템(`~/workspace/projects/inspection-system`)과는 인프라·코드 모두 별개
+- 워크스페이스 룰 (`~/workspace/rules/*.md`)이 본 프로젝트 룰 위에 fallback으로 적용됨 (워크스페이스 worktree에서는 `~/workspace/.claude/worktrees/<name>/rules/`가 동일 내용)
 - 본 프로젝트 룰이 워크스페이스 룰과 충돌 시 본 프로젝트 룰 우선 (워크스페이스 `CLAUDE.md` 규칙 우선순위)
 - 호스트 모델 dg5W/dg5R 상세 스펙: `~/workspace/projects/inspection-system/context/target-servers.md`

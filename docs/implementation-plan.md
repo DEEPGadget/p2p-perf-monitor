@@ -52,15 +52,25 @@
 ```
 app/
   __init__.py
-  schemas.py             MeasurementEvent, StartRequest, SessionStatus
-  parser.py              parse_ib_write_bw_line, parse_ib_read_lat_line, parse_iperf3_json
-  runner.py              run_perftest_session(config) -> AsyncIterator[MeasurementEvent]
-  config.py              load .env
+  schemas.py             StartRequest, SessionStatus, MeasurementEvent, NicTelemetry
+                         (스키마 필드 정의 정본 → rules/measurement.md)
+  parser.py              parse_ib_write_bw_line, parse_ib_read_lat_line,
+                         parse_iperf3_json (uni + bidir 모두)
+  runner.py              run_session(req) -> AsyncIterator[MeasurementEvent]
+                         + mock_session() (NIC 부재 시 generator)
+  config.py              .env 로딩 — Settings(BaseSettings) 정의
+                         필수 필드: SERVER_A_HOST, SERVER_B_HOST, SSH_USER,
+                         SSH_KEY_PATH, SSH_KNOWN_HOSTS, NIC_DEVICE_A,
+                         NIC_DEVICE_B, RDMA_GID_INDEX, MEASUREMENT_TOOL,
+                         BIND_HOST, BIND_PORT, DEV_CORS
 tests/
+  conftest.py            mock asyncssh fixture, TestClient fixture
   fixtures/
-    perftest_ib_write_bw_200g.txt    (가능하면 실측, 없으면 합성)
+    perftest_ib_write_bw_200g_uni.txt    (실측 캡처)
+    perftest_ib_write_bw_200g_bidir.txt  (Phase 1 PoC 시 -b 옵션 캡처 필수)
     perftest_ib_read_lat.txt
     iperf3_tcp_8streams.json
+    iperf3_tcp_bidir.json
   test_parser.py
   test_runner.py
 scripts/
@@ -69,46 +79,23 @@ scripts/
 
 ### 인터페이스
 
+스키마 필드 정의 정본 → `.claude/rules/measurement.md` (`StartRequest` / `MeasurementEvent` / `NicTelemetry`).
+
+함수 시그니처:
+
 ```python
-# app/schemas.py
-class StartRequest(BaseModel):
-    tool: Literal["ib_write_bw", "ib_read_lat", "iperf3", "mock"] = "ib_write_bw"
-    duration_sec: int = Field(60, ge=5, le=600)
-    msg_size: int = 65536           # allowlist 검증 별도
-    qp_count: int = 1
-    iperf3_streams: int = 8
-    bidir: bool = False              # ib_write_bw / iperf3 한정. ib_read_lat 시 422
-    model_config = ConfigDict(extra="forbid")
-
-class MeasurementEvent(BaseModel):
-    ts: datetime
-    msg_size: int
-    iterations: int | None
-    bw_peak_gbps: float
-    bw_avg_gbps: float
-    msg_rate_mpps: float | None
-    lat_us: float | None
-    lat_p99_us: float | None
-    tool: Literal["perftest", "iperf3", "mock"]
-    sub_tool: Literal["ib_write_bw", "ib_read_lat", "iperf3", "mock"] | None
-
-class NicTelemetry(BaseModel):
-    """양쪽 NIC IC + 광 트랜시버 모듈 온도. 측정 BW와 별도 채널, 1Hz 폴링."""
-    ts: datetime
-    server_a_ic_c: float | None         # ASIC IC 온도
-    server_b_ic_c: float | None
-    server_a_module_c: float | None     # 광 트랜시버 모듈 온도 (QSFP56)
-    server_b_module_c: float | None
-    source: Literal["mget_temp+ethtool", "sysfs+ethtool", "mlxlink", "mock"]
-
 # app/parser.py
-def parse_ib_write_bw_line(line: str) -> MeasurementEvent | None: ...
+def parse_ib_write_bw_line(line: str, bidir: bool = False) -> MeasurementEvent | None: ...
 def parse_ib_read_lat_line(line: str) -> MeasurementEvent | None: ...
-def parse_iperf3_json(text: str) -> list[MeasurementEvent]: ...
+def parse_iperf3_json(text: str, bidir: bool = False) -> list[MeasurementEvent]:
+    """bidir=True 시 sum_sent + sum_received 합산 (rules/measurement.md §iperf3 파싱)."""
 
 # app/runner.py
 async def run_session(req: StartRequest) -> AsyncIterator[MeasurementEvent]:
     """양쪽 서버에 SSH, 측정 실행, 라인 파싱 → 이벤트 yield."""
+
+async def mock_session(req: StartRequest) -> AsyncIterator[MeasurementEvent]:
+    """NIC 부재 환경용 generator (rules/measurement.md §데모 모드)."""
 ```
 
 ### 완료 기준
@@ -122,6 +109,9 @@ async def run_session(req: StartRequest) -> AsyncIterator[MeasurementEvent]:
 
 - `asyncssh.connect`의 known_hosts 정책은 시작부터 strict. mock 환경에선 `~/.ssh/known_hosts` 사용
 - perftest server-side 백그라운드 PID 추적: `asyncio.subprocess.Popen` 대신 asyncssh `process` 객체 보관
+- **controller self-SSH 정책**: controller가 measurement peer 중 하나일 때 자기 자신에게도 **통일된 SSH로 연결** (subprocess 분기 없음). 이유: ① 코드 단순성, ② 자기 known_hosts 1회 등록 외 부담 없음, ③ 200G 측정 BW에 영향 없음(제어 채널만 ssh, 실 측정은 perftest 직접). 운영 시 `ssh-keyscan localhost >> ~/.ssh/known_hosts` 1회 실행 명시
+- **BIDIR 출력 포맷 fixture 캡처 필수**: `ib_write_bw -b` 실행 시 stdout 컬럼이 단방향과 동일한지(합산 단일 라인 vs 두 라인 분리) 미검증. Phase 1 PoC에서 실 NIC fixture 캡처 후 `parse_ib_write_bw_line(line, bidir=True)` 분기 확정 — 미검증 시 합산 단일 라인 가정으로 구현, 실측 후 패치
+- **mock_session 위치**: Phase 1 시작부터 `runner.py`에 통합 (별도 모듈 X). PoC 단계에서도 `tool=mock` 동작 가능해야 SSH 환경 부재 시 테스트 가능
 
 ## 5. Phase 2 — FastAPI 백엔드
 
@@ -150,19 +140,32 @@ tests/
 
 ### 인터페이스
 
+**명명 규약**:
+- `SessionStatus` (Pydantic 모델, `schemas.py`): 외부 API 응답 DTO
+- `SessionState` (Literal/Enum, `state.py` 내부): 머신 상태값 (`idle` / `connecting` / `running` / `error`)
+- 둘은 다른 개념. `SessionStatus.state: SessionState` 관계
+
 ```python
-# app/state.py
-class SessionState(BaseModel):
+# app/schemas.py
+class SessionStatus(BaseModel):
     state: Literal["idle", "connecting", "running", "error"] = "idle"
     tool: str | None = None
     started_at: datetime | None = None
     error: dict | None = None
 
+# app/state.py
 class SessionManager:
-    async def start(self, req: StartRequest) -> SessionState
-    async def stop(self) -> SessionState
-    def status(self) -> SessionState
-    async def subscribe(self) -> AsyncIterator[Event]   # SSE용
+    async def start(self, req: StartRequest) -> SessionStatus
+    async def stop(self) -> SessionStatus
+    def status(self) -> SessionStatus
+    async def subscribe(self) -> AsyncIterator[Event]   # SSE fan-out
+
+# app/nic_telemetry.py
+class NicTelemetryPoller:
+    """NIC IC + Module 온도 폴링. 측정 SSH와 별도 connection pool 사용."""
+    async def start(self) -> None: ...   # 1Hz 폴링 task 시작
+    async def stop(self) -> None: ...
+    def latest(self) -> NicTelemetry | None: ...
 
 # app/api/measure.py
 @router.post("/start", response_model=SessionStatus)
@@ -174,22 +177,27 @@ async def stream(mgr: SessionManager = Depends()) -> StreamingResponse:
     return StreamingResponse(sse_generator(mgr), media_type="text/event-stream")
 ```
 
+SSE 이벤트 타입·payload 정본 → `.claude/rules/api.md` §SSE 포맷.
+
 ### 완료 기준
 
 - `/api/health` 200 OK
 - `/api/start` (tool=mock) → 5초간 SSE `measurement` 이벤트 스트리밍 → `/api/stop`
 - `nic_temp` SSE 이벤트는 IDLE/RUNNING 무관 항상 1Hz 발행 (`source: "mock"` 모드 포함)
 - 동시 SSE 클라이언트 3개 이상 정상 동작
-- 잘못된 입력 (`tool=foo`) → 422
+- 잘못된 입력 (`tool=foo`, `tool=ib_read_lat` + `bidir=true`) → 422
 - 이미 RUNNING 상태에서 `/api/start` → 409 + 현재 상태
-- NIC 온도 측정 실패(SSH timeout) 시 `server_a_chip_c=None` + 직전 값 유지
+- NIC 온도 측정 실패(SSH timeout) 시 `server_a_ic_c=None` + 직전 값 유지
 - `pytest tests/` 전체 통과
 
 ### 위험·결정
 
-- SSE는 `asyncio.Queue` 기반 fan-out. 구독자 disconnect 시 cleanup 필수 (메모리 누수 방지)
+- **SSE 큐 정책**: 구독자별 `asyncio.Queue(maxsize=256)`, drop-oldest. 구독자 disconnect 시 즉시 cleanup. 30분 무 트래픽 클라이언트 자동 cleanup → 정책 정본 `rules/api.md` §큐/백프레셔
 - heartbeat 15초 (`: ping\n\n`)
-- mock generator는 `runner.py`에 `mock_session()` 함수로 통합 (별도 모듈 불필요)
+- **NIC 텔레메트리 SSH 분리**: `nic_telemetry.py`는 측정 SSH와 별도 `asyncssh.SSHClientConnection` 풀 사용. 측정 시작/종료 사이클과 무관하게 텔레메트리 연속성 보장. fault isolation 목적
+- **mget_temp 권한**: 1차 sysfs hwmon (`/sys/class/hwmon/.../temp1_input`) 시도 → 실패 시 `sudo mget_temp` fallback. sudoers NOPASSWD 라인 정책 → `rules/security.md`
+- mock generator는 `runner.py`에 `mock_session()` 함수로 통합 (Phase 1부터)
+- **CI 워크플로우**: 본 Phase부터 `.github/workflows/ci.yml` 추가 — pytest + ruff (Phase 4 이전이지만 PR 검증에 필요)
 
 ## 6. Phase 3 — SvelteKit 프론트
 
@@ -342,7 +350,13 @@ dependencies = [
   "structlog>=24.4",
 ]
 [dependency-groups]
-dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "httpx>=0.28", "ruff>=0.8"]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=5.0",
+  "httpx>=0.28",
+  "ruff>=0.8",
+]
 ```
 
 ### Frontend (`package.json`)
@@ -361,7 +375,9 @@ dev = ["pytest>=8.3", "pytest-asyncio>=0.24", "httpx>=0.28", "ruff>=0.8"]
   "@sveltejs/vite-plugin-svelte": "^4",
   "typescript": "^5",
   "tailwindcss": "^4",
-  "vitest": "^2"
+  "vitest": "^2",
+  "@testing-library/svelte": "^5",
+  "jsdom": "^25"
 }
 ```
 

@@ -2,7 +2,24 @@
 
 서버 2대(각 1× Mellanox ConnectX-7 200G RoCE) 간 P2P 통신 성능을 실시간 측정·시각화하는 Web 기반 데모 도구. 전시회 시연 용도.
 
-> `.claude/rules/` 6개 파일 전체가 system-reminder로 자동 로드됨. 아래 "→ rules/X" 표기는 위치 안내용.
+> `.claude/rules/` 6개 파일 전체가 system-reminder로 자동 로드됨. 본문의 "→ rules/X" 또는 "→ docs/X" 표기는 정본 위치 안내용 (실제 내용은 자동 로드되거나 on-demand로 읽음).
+
+## 정본 파일 매핑
+
+drift 방지를 위해 각 카테고리의 단일 정본 파일을 명시. 갱신 시 정본 파일만 수정하고 다른 문서는 참조만.
+
+| 카테고리 | 정본 파일 | 갱신 시점 |
+|---------|----------|----------|
+| 디렉터리 구조 (전체 트리) | `CLAUDE.md` (본 파일) | Phase 1·3 시작 시 |
+| 측정 명령·파싱 규약·`MeasurementEvent`/`NicTelemetry` 스키마 | `.claude/rules/measurement.md` | API/스키마 변경 시 |
+| API 엔드포인트·SSE 이벤트·에러 코드·큐 정책 | `.claude/rules/api.md` | API 변경 시 |
+| 보안 정책 (SSH·sudo·시크릿) | `.claude/rules/security.md` | 위협 모델 변경 시 |
+| FE 코드 컨벤션 | `.claude/rules/frontend.md` | 라이브러리·룰 변경 시 |
+| 디자인 토큰·색상 팔레트·와이어프레임·모션 | `docs/ui-ux-spec.md` | mockup·디자인 변경 시 |
+| NIC 온도 임계값 | `.claude/rules/measurement.md` §임계값 | 부스 실측 후 |
+| NIC·서버·트랜시버 환경 가정 | `context/nic-environment.md` | 환경 결정 시 |
+| Phase별 산출물·일정·인터페이스 | `docs/implementation-plan.md` | Phase 시작 시 |
+| 결정 완료/대기 사항 + 진행 상태 | `handoff/current-state.md` | 매 PR / 결정 시 |
 
 ## 핵심 원칙
 
@@ -129,7 +146,7 @@ handoff/current-state.md
 - **측정 출력 표준화**: perftest/iperf3 stdout → 단일 `MeasurementEvent` Pydantic 모델 → `.claude/rules/measurement.md`
 - **SSE 단방향**: WebSocket 미사용. 컨트롤은 일반 POST → `.claude/rules/api.md`
 - **SvelteKit static**: `adapter-static`으로 정적 빌드 → FastAPI가 `StaticFiles`로 서빙. Node 런타임 운영 환경에 둘 필요 없음 → `.claude/rules/frontend.md`
-- **UI 톤**: 흑백 + cyan(#00d9ff) 강조. 5em+ 카운터 폰트. 모션 풀가속 → `docs/ui-ux-spec.md`
+- **UI 톤**: 흑백 + cyan(#00d9ff) 강조. KPI 카드 폰트 72px. 모션 풀가속 → `docs/ui-ux-spec.md` §6.4
 - **메모리 상태**: 한 세션, DB 없음. 재시작 시 초기화
 
 ## Commands
@@ -188,18 +205,12 @@ main 직접 push 금지. 브랜치 명명: `feature/`, `fix/`, `chore/`
 | `NIC_DEVICE_A` | Server A NIC 디바이스 | `mlx5_0` |
 | `NIC_DEVICE_B` | Server B NIC 디바이스 | `mlx5_0` |
 | `RDMA_GID_INDEX` | RoCE v2 GID index | `3` |
-| `MEASUREMENT_TOOL` | `perftest` \| `iperf3` \| `mock` | `perftest` |
+| `MEASUREMENT_TOOL` | 카테고리 default — `perftest` \| `iperf3` \| `mock`. API body의 `tool` 필드(서브툴)와 구분 → `.claude/rules/measurement.md` | `perftest` |
 | `BIND_HOST` / `BIND_PORT` | FastAPI 바인드 | `0.0.0.0` / `8080` |
 
 ## 결정 대기 항목
 
-| # | 항목 | 현재 가정 | 확정 시 영향 |
-|---|------|----------|-------------|
-| - | NIC GID index | 3 (RoCE v2 통상값). Phase 1 시 `show_gids`로 확정 | `context/nic-environment.md` |
-| - | MTU / Jumbo frame | 9000 (성능 최대치 가정) | 측정 명령 옵션 |
-| - | 부스 디스플레이 해상도 | 1080p 우선, 4K 비례 대응 | `docs/ui-ux-spec.md` |
-| - | 케이블 종류 (DAC/AOC, QSFP56/OSFP) | QSFP56 가정 (UI에 반영) | `context/nic-environment.md` |
-| - | 직결 vs 스위치 경유 | 직결 가정 | 측정 결과 해석 |
+→ `handoff/current-state.md` "결정 대기 항목" 섹션에서 통합 관리.
 
 ## 현재 구현 상태
 

@@ -81,6 +81,7 @@ ib_write_bw -d mlx5_0 -F --report_gbits -D 30 <server-A-ip>
 | 측정 | 기대값 | 비고 |
 |------|--------|------|
 | `ib_write_bw` (msg=64K) | 195~199 Gb/s peak | NIC 이론 최대 근접 |
+| `ib_write_bw -b` (BIDIR) | ~380 Gb/s 합산 | UI Y축 400 max |
 | `ib_write_bw` (msg=8K) | 180~195 Gb/s peak | 메시지 사이즈 ↓ → BW ↓ |
 | `ib_read_lat` (msg=8B) | 1.5~2.0 µs avg | RDMA Read RTT |
 | `iperf3 -P 8` (TCP) | 150~180 Gb/s | RDMA 대비 GAP 가시화 |
@@ -94,18 +95,13 @@ ib_write_bw -d mlx5_0 -F --report_gbits -D 30 <server-A-ip>
 | 모듈 종류 | **QSFP56** (200G optical) — UI 다이어그램 표기와 일치 |
 | 냉각 | Liquid-Cooled (회사 자체 솔루션) |
 | 온도 측정 | `ethtool -m <netdev>` 의 `Module temperature` 또는 `mlxlink --json` |
-| 운영 한계 | ~80°C. UI 임계값 65°C warning / 75°C danger |
+| 운영 한계 | ~80°C |
+
+온도 임계값(warning/danger) 정본 → `.claude/rules/measurement.md` §임계값 / 색상 코딩.
 
 ## 결정 대기 항목
 
-| 항목 | 상태 |
-|------|------|
-| 케이블 종류 세부 (DAC/AOC, 길이) | QSFP56 가정. AOC/DAC 결정 시 갱신 |
-| 직결 vs 스위치 경유 | 직결 가정 (단순 P2P 데모) |
-| 관리망 IP / RoCE 망 IP 분리 여부 | TBD (Phase 1 시) |
-| MLNX_OFED 정확 버전 | TBD (설치 시) |
-
-이 항목들은 실제 부스 환경 결정 후 본 문서 갱신.
+부스 환경 관련 미결정 항목은 → `handoff/current-state.md` "결정 대기 항목" 섹션에서 통합 관리.
 
 ## 갱신 정책
 

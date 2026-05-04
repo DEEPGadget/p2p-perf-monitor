@@ -61,10 +61,41 @@ await conn.run(f'ib_write_bw -d {device} -F -D {duration} {peer_host}')
 
 ## 측정 도구 권한
 
-- `ib_write_bw` 등 perftest는 일반 사용자로 실행 가능 (RDMA 디바이스 권한만 있으면 됨)
-- `iperf3`도 일반 사용자
-- root 불필요. SSH 사용자가 RDMA 디바이스(`/dev/infiniband/*`) 접근 권한만 가지면 됨
+- `ib_write_bw` / `ib_read_lat` / `iperf3`는 **일반 사용자로 실행 가능** (RDMA 디바이스 권한만 있으면 됨)
+- SSH 사용자가 `/dev/infiniband/*` 접근 권한만 가지면 됨
 - 권한 부족 시 → 운영 문서에 udev rule 또는 그룹 추가 안내
+
+## NIC 텔레메트리 권한 (`nic_telemetry.py`)
+
+폴링 우선순위 정책:
+
+1. **sysfs hwmon** (`/sys/class/hwmon/.../temp1_input`) — sudo 불필요
+2. `ethtool -m <netdev>` — 일반 사용자 가능 (대부분의 배포판)
+3. `mget_temp` / `mst` — **sudo 필요**. fallback 한정
+
+sysfs + ethtool로 충분히 동작하는 경우 sudo 회피. 부득이하게 `mget_temp` 사용 시:
+
+### sudoers NOPASSWD 라인
+
+`/etc/sudoers.d/p2p-monitor` 파일에 다음 추가:
+
+```
+deepgadget ALL=(root) NOPASSWD: /usr/bin/mst, /usr/bin/mget_temp
+```
+
+- 화이트리스트만. 와일드카드(`/usr/bin/*`) 금지
+- 운영 시 `visudo -c -f /etc/sudoers.d/p2p-monitor`로 syntax 검증
+
+## SSH 통일 정책 (controller self-SSH 포함)
+
+- **모든 측정·텔레메트리 호출은 SSH로 통일**. controller가 측정 peer 중 하나일 때도 자기 자신 IP로 SSH 연결 (subprocess 분기 없음)
+- 이유: 코드 단순성 + 인터페이스 일관성. 200G 측정 BW에 영향 없음(제어 채널만 ssh)
+- 운영 시 자기 known_hosts 1회 등록 필요:
+  ```bash
+  ssh-keyscan -H 127.0.0.1 localhost <SERVER_A_HOST> <SERVER_B_HOST> \
+    >> $SSH_KNOWN_HOSTS
+  ```
+- known_hosts 검증 강제 (`StrictHostKeyChecking=yes`, `known_hosts=$SSH_KNOWN_HOSTS`)
 
 ## 로그
 
