@@ -40,6 +40,29 @@ python3 -m http.server 8000
 
 본 구현 시 self-hosted로 변경 (폐쇄망 동작 보장).
 
+## 회사 로고 교체
+
+현재 `mockup/logo.svg`는 점선 박스 + "LOGO PLACEHOLDER" 텍스트 형태의 placeholder. 실 로고를 받으면 다음 중 하나로 교체:
+
+**SVG (권장 — 벡터, 화면 비율 유지)**
+```bash
+# 받은 SVG 파일을 mockup/logo.svg로 덮어쓰기
+cp /path/to/your-logo.svg mockup/logo.svg
+```
+
+**PNG**
+```bash
+# 1) PNG 파일을 mockup/logo.png 로 추가
+cp /path/to/your-logo.png mockup/logo.png
+
+# 2) mockup/index.html 의 <img src="logo.svg"> 을 logo.png 로 변경
+sed -i 's|src="logo.svg"|src="logo.png"|' mockup/index.html
+```
+
+권장 크기: height 40px (헤더 표시 기준). 더 큰 원본은 자동 스케일됨. 흰색·밝은 색 톤이어야 다크 배경에 잘 보임.
+
+본 구현 단계에서는 `frontend/static/logo.{svg,png}` 로 자산이 이동.
+
 ## 검증 항목
 
 - [ ] 1080p 디스플레이에서 레이아웃 깨짐 없음

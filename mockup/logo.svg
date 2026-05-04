@@ -1,27 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  PLACEHOLDER LOGO
-  실제 회사 로고 파일을 받으면 본 SVG를 교체하거나
-  mockup/index.html의 <img src="logo.svg"> 경로를 변경.
-  현재는 디자인 검증용 단순 텍스트 로고.
+  PLACEHOLDER LOGO (점선 박스로 명시)
+  ───────────────────────────────────────
+  실제 회사 로고를 받으면 본 SVG를 교체하거나 mockup/logo.png 를 사용:
+    1) SVG: 본 파일을 새 SVG로 덮어쓰기 (height 40 기준 크기 권장)
+    2) PNG: mockup/logo.png 파일 추가 + index.html 의 <img src="logo.svg"> 를
+            <img src="logo.png"> 로 변경
+  본 구현 시 frontend/static/logo.{svg,png} 로 이동.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 40" width="240" height="40">
-  <defs>
-    <linearGradient id="lg-accent" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%"  stop-color="#00d9ff"/>
-      <stop offset="100%" stop-color="#00aacc"/>
-    </linearGradient>
-  </defs>
-  <!-- 마크 -->
-  <g transform="translate(4, 6)">
-    <rect x="0" y="0" width="28" height="28" rx="6" fill="url(#lg-accent)"/>
-    <path d="M7 8 L21 8 L21 14 L13 14 L13 20 L21 20 L21 26 L7 26 Z"
-          fill="#0a0a0a"/>
-  </g>
-  <!-- 워드마크 -->
-  <text x="42" y="27"
-        font-family="-apple-system, Inter, 'Segoe UI', sans-serif"
-        font-size="20" font-weight="800"
-        letter-spacing="0.04em"
-        fill="#ffffff">DEEPGADGET</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 40" width="220" height="40">
+  <rect x="1" y="1" width="218" height="38" rx="4"
+        fill="none" stroke="#a1a1aa" stroke-width="1" stroke-dasharray="4 3"/>
+  <text x="110" y="25"
+        font-family="-apple-system, 'Inter', monospace"
+        font-size="11" font-weight="500" letter-spacing="0.2em"
+        fill="#a1a1aa" text-anchor="middle">
+    LOGO PLACEHOLDER
+  </text>
 </svg>

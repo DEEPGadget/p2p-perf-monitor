@@ -194,17 +194,19 @@ KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 영역 확대분 
 
 NicTempPanel 내부:
 1. 헤더: "NIC IC & MODULE TEMPERATURE" 라벨 + LIVE 인디케이터
-2. **4 타일 (2×2 grid)**:
-   - 1행: `IC · SERVER A`, `IC · SERVER B` (solid 좌측 사이드바)
-   - 2행: `MODULE · SERVER A`, `MODULE · SERVER B` (dashed 좌측 사이드바 — IC와 시각 구분)
+**헤더 표기**: `NIC IC & MODULE TEMPERATURE` + 우측에 `◇ LIQUID-COOLED` 액냉 배지 (accent border + accent 색)
+
+2. **4 타일 (2×2 grid)** — 라벨에 서버 모델명 직접 표기:
+   - 1행: `IC · dg5W`, `IC · dg5R` (solid 좌측 사이드바)
+   - 2행: `MODULE · dg5W`, `MODULE · dg5R` (dashed 좌측 사이드바 — IC와 시각 구분)
    - 각 타일: JetBrains Mono 28px 굵은 숫자 + "°C" 단위
    - 색상 코딩은 컴포넌트별 임계값(§6.3) 따름
-3. **시계열 미니 차트 (ECharts) — 4개 라인**:
-   - `IC A`: cyan solid
-   - `IC B`: amber solid
-   - `MOD A`: cyan dashed
-   - `MOD B`: amber dashed
-   - 색은 서버 구분(A=cyan, B=amber), 선 스타일은 컴포넌트 구분(IC=solid, Module=dashed)
+3. **시계열 미니 차트 (ECharts) — 4개 라인** (라벨에 서버 모델명):
+   - `IC · dg5W`: cyan solid
+   - `IC · dg5R`: amber solid
+   - `MOD · dg5W`: cyan dashed
+   - `MOD · dg5R`: amber dashed
+   - 색은 서버 구분(dg5W=cyan, dg5R=amber), 선 스타일은 컴포넌트 구분(IC=solid, Module=dashed)
    - Y축: 25 ~ 90°C
    - 범례: 우상단 작게 (4개 항목)
    - X축: BW 차트와 동일한 elapsed time

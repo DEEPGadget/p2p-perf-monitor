@@ -323,6 +323,22 @@
     letter-spacing: 0.15em;
     text-transform: uppercase;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .liquid-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
   }
   .chart-live {
     display: flex; align-items: center; gap: 8px;
@@ -714,7 +730,10 @@
 
     <section class="nic-panel">
       <div class="chart-header">
-        <div class="chart-title">NIC IC &amp; MODULE TEMPERATURE</div>
+        <div class="chart-title">
+          NIC IC &amp; MODULE TEMPERATURE
+          <span class="liquid-badge">◇ LIQUID-COOLED</span>
+        </div>
         <div class="chart-live" id="nic-live" style="opacity: 0;">
           <span class="dot"></span>
           <span>LIVE</span>
@@ -723,14 +742,14 @@
       <div class="nic-tiles">
         <!-- Row 1: NIC IC -->
         <div class="nic-tile" id="nic-tile-a">
-          <div class="nic-tile-label">IC · SERVER A</div>
+          <div class="nic-tile-label">IC · dg5W</div>
           <div class="nic-tile-value-row">
             <span class="nic-tile-value" id="nic-a-value">—</span>
             <span class="nic-tile-unit">°C</span>
           </div>
         </div>
         <div class="nic-tile" id="nic-tile-b">
-          <div class="nic-tile-label">IC · SERVER B</div>
+          <div class="nic-tile-label">IC · dg5R</div>
           <div class="nic-tile-value-row">
             <span class="nic-tile-value" id="nic-b-value">—</span>
             <span class="nic-tile-unit">°C</span>
@@ -738,14 +757,14 @@
         </div>
         <!-- Row 2: Optical Module -->
         <div class="nic-tile module" id="mod-tile-a">
-          <div class="nic-tile-label">MODULE · SERVER A</div>
+          <div class="nic-tile-label">MODULE · dg5W</div>
           <div class="nic-tile-value-row">
             <span class="nic-tile-value" id="mod-a-value">—</span>
             <span class="nic-tile-unit">°C</span>
           </div>
         </div>
         <div class="nic-tile module" id="mod-tile-b">
-          <div class="nic-tile-label">MODULE · SERVER B</div>
+          <div class="nic-tile-label">MODULE · dg5R</div>
           <div class="nic-tile-value-row">
             <span class="nic-tile-value" id="mod-b-value">—</span>
             <span class="nic-tile-unit">°C</span>
@@ -953,9 +972,9 @@ nicChart.setOption({
     splitLine: { lineStyle: { color: '#1c1c1c' } },
   },
   legend: {
-    data: ['IC A', 'IC B', 'MOD A', 'MOD B'],
+    data: ['IC · dg5W', 'IC · dg5R', 'MOD · dg5W', 'MOD · dg5R'],
     textStyle: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 },
-    top: 0, right: 4, itemWidth: 16, itemHeight: 2, itemGap: 8,
+    top: 0, right: 4, itemWidth: 16, itemHeight: 2, itemGap: 10,
   },
   tooltip: {
     trigger: 'axis',
@@ -964,13 +983,13 @@ nicChart.setOption({
     textStyle: { color: '#fff', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
   },
   series: [
-    { name: 'IC A',  type: 'line', data: [], smooth: true, symbol: 'none',
+    { name: 'IC · dg5W',  type: 'line', data: [], smooth: true, symbol: 'none',
       lineStyle: { color: '#00d9ff', width: 2, type: 'solid' } },
-    { name: 'IC B',  type: 'line', data: [], smooth: true, symbol: 'none',
+    { name: 'IC · dg5R',  type: 'line', data: [], smooth: true, symbol: 'none',
       lineStyle: { color: '#f59e0b', width: 2, type: 'solid' } },
-    { name: 'MOD A', type: 'line', data: [], smooth: true, symbol: 'none',
+    { name: 'MOD · dg5W', type: 'line', data: [], smooth: true, symbol: 'none',
       lineStyle: { color: '#00d9ff', width: 1.6, type: 'dashed' } },
-    { name: 'MOD B', type: 'line', data: [], smooth: true, symbol: 'none',
+    { name: 'MOD · dg5R', type: 'line', data: [], smooth: true, symbol: 'none',
       lineStyle: { color: '#f59e0b', width: 1.6, type: 'dashed' } },
   ],
 });
