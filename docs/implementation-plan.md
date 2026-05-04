@@ -92,11 +92,13 @@ class MeasurementEvent(BaseModel):
     sub_tool: Literal["ib_write_bw", "ib_read_lat", "iperf3", "mock"] | None
 
 class NicTelemetry(BaseModel):
-    """양쪽 NIC ASIC 온도. 측정 BW와 별도 채널, 1Hz 폴링."""
+    """양쪽 NIC IC + 광 트랜시버 모듈 온도. 측정 BW와 별도 채널, 1Hz 폴링."""
     ts: datetime
-    server_a_chip_c: float | None    # 측정 실패 시 None
-    server_b_chip_c: float | None
-    source: Literal["mget_temp", "sysfs", "mock"]
+    server_a_ic_c: float | None         # ASIC IC 온도
+    server_b_ic_c: float | None
+    server_a_module_c: float | None     # 광 트랜시버 모듈 온도 (QSFP56)
+    server_b_module_c: float | None
+    source: Literal["mget_temp+ethtool", "sysfs+ethtool", "mlxlink", "mock"]
 
 # app/parser.py
 def parse_ib_write_bw_line(line: str) -> MeasurementEvent | None: ...
@@ -137,7 +139,7 @@ app/
     stream.py            GET /api/stream (SSE — measurement + nic_temp 통합 채널)
     health.py            GET /api/health
   state.py               단일 세션 상태 + asyncio.Queue 기반 pub/sub
-  nic_telemetry.py       양쪽 서버 NIC 온도 1Hz 폴링 (mget_temp), nic_temp 이벤트 발행
+  nic_telemetry.py       양쪽 서버 NIC IC + 광 모듈 온도 1Hz 폴링 (mget_temp + ethtool -m), nic_temp 이벤트 발행
 tests/
   test_api.py            httpx + ASGI
   test_sse.py

@@ -63,18 +63,16 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ [LOGO] DEEPGADGET   ·   P2P PERF MONITOR              ● RUNNING  10:42  │ HEADER  (h:64px)
+│ [회사 로고 SVG]   ·   P2P PERF MONITOR              ● RUNNING  10:42:13  │ HEADER  (h:72px)
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
-│       ┌──────────────────────────────────────────────────────┐           │ HARDWARE
-│       │                                                        │          │ DIAGRAM
-│       │   [CPU] [RAM]                              [CPU] [RAM] │          │ (h:200px)
-│       │   ┌──────┐                                ┌──────┐    │          │
-│       │   │SERVER│ ░░░░░●●●●●●●●●●●●●●●░░░░░░░░░░ │SERVER│    │          │ packet flow
-│       │   │  A   │      200G RoCE link            │  B   │    │          │ animation
-│       │   └──────┘                                └──────┘    │          │
-│       │   CX-7 mlx5_0                            CX-7 mlx5_0  │          │
-│       └──────────────────────────────────────────────────────┘           │
+│ ┌──────────────────────┐ ┌─QSFP56─┐  ●●●●  ┌─QSFP56─┐ ┌──────────────────┐│ HARDWARE
+│ │ dg5W-H200NVL-4       │ │ Liquid │ link  │ Liquid │ │ dg5R-PRO6000SE-10│ │ DIAGRAM
+│ │ ◇ LIQUID-COOLED      │ │ MODULE │═══════│ MODULE │ │ ◇ LIQUID-COOLED  │ │ (h:280px)
+│ │ [CPU][RAM][PCIe5x16] │ │  41°C  │       │  43°C  │ │[CPU][RAM][PCIe5] │ │
+│ │ ConnectX-7 · mlx5_0  │ └────────┘       └────────┘ │ConnectX-7·mlx5_0 │ │ packet flow
+│ │ IC TEMP        62°C  │                              │ IC TEMP    64°C  │ │ animation
+│ └──────────────────────┘                              └──────────────────┘ │
 │                                                                          │
 │   ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │ KPI CARDS
 │   │             │ │             │ │             │ │             │       │ (h:240px)
@@ -84,15 +82,15 @@
 │   │   NOW       │ │   AVG       │ │   PEAK      │ │   LATENCY   │       │
 │   └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
 │                                                                          │
-│   ┌──────────────────────────────────────────┐  ┌──────────────┐       │ MAIN CHARTS
-│   │ Bandwidth (Gb/s)                  ● live  │  │ NIC CHIP TEMP│       │ (h:340px)
-│   │  200 ┤                                     │  │ ┌─A─┐ ┌─B──┐│       │ left: BW chart
-│   │  150 ┤      ╱╲    ╱╲╱╲      ╱╲╱╲╱╲        │  │ │62°│ │64°││       │ right: temp panel
-│   │  100 ┤  ╱╲╱╲  ╲╱╲╱    ╲╱╲╱╲╱              │  │ └───┘ └────┘│       │  (tile + chart)
-│   │   50 ┤                                     │  │ A:cyan B:amb│       │
-│   │    0 └─────────────────────────           │  │ ╱╲╱╲╱╲╱╲╱   │       │
-│   │      0s    10s    20s    30s    40s   60s │  │ 30 ─── 90°C │       │
-│   └──────────────────────────────────────────┘  └──────────────┘       │
+│   ┌──────────────────────────────────────────┐  ┌─[NIC IC & MODULE]─┐  │ MAIN CHARTS
+│   │ Bandwidth (Gb/s)                  ● live  │  │ ┌IC·A┐ ┌IC·B┐    │  │ left: BW
+│   │  200 ┤                                     │  │ │62.4│ │64.1│    │  │ right: 4 tiles
+│   │  150 ┤      ╱╲    ╱╲╱╲      ╱╲╱╲╱╲        │  │ └────┘ └────┘    │  │  + 4-line
+│   │  100 ┤  ╱╲╱╲  ╲╱╲╱    ╲╱╲╱╲╱              │  │ ┌MOD·A┐┌MOD·B┐   │  │  timeseries
+│   │   50 ┤                                     │  │ │41.5││43.0│    │  │ (IC solid,
+│   │    0 └─────────────────────────           │  │ └────┘ └────┘    │  │  Module dashed)
+│   │      0s    10s    20s    30s    40s   60s │  │ ────── 4 lines ──│  │
+│   └──────────────────────────────────────────┘  └──────────────────┘  │
 │                                                                          │
 │   ┌─[ TOOL ▾ ]─[ MSG SIZE ▾ ]─[ DURATION ▾ ]─[ DIR ▾ ]──[ ▶ START ]─┐  │ CONTROL
 │   └───────────────────────────────────────────────────────────────┘     │ (h:80px)
@@ -102,17 +100,21 @@
 ```
 
 영역 비율 (1080p 기준):
-- HEADER 64px + FOOTER 32px = 96px 고정
-- 잔여 984px 분할: HARDWARE 200px / KPI 240px / CHART 340px / CONTROL 80px / 여백 124px
+- HEADER 72px + FOOTER 32px = 104px 고정
+- 잔여 ≈ 976px 분할: HARDWARE 280px / KPI 200px / CHART 1fr (≈324px) / CONTROL 72px / gaps·여백 100px
 
-4K 환경: KPI 카드 폰트 1.5×, 차트 영역 비례 확대.
+KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 영역 확대분 보전)
+4K 환경: 폰트·박스 1.5×, 차트 영역 비례 확대
 
 ## 6. 컴포넌트 사양
 
 ### 6.1 Header
 
-- 좌: 로고(40px) + DEEPGADGET 텍스트 + 구분점 + "P2P PERF MONITOR"
-- 우: 상태 배지 (StatusBadge) + 현재 시각 (mono, hh:mm)
+- 좌: **회사 로고 이미지(SVG, height 40px)** + 구분점 "·" + "P2P PERF MONITOR" 텍스트
+  - 로고 자산 위치: `frontend/static/logo.svg` (실제 파일 받기 전까지는 `mockup/logo.svg` 의 placeholder 사용)
+  - 텍스트(DEEPGADGET 등)는 로고 이미지 안에 포함되므로 별도 워드마크 표시 안 함
+- 우: 상태 배지 (StatusBadge) + 현재 시각 (mono, hh:mm:ss)
+- 높이: 72px (로고 + 여백)
 - 배경: bg, 하단 1px border
 
 ### 6.2 StatusBadge
@@ -127,13 +129,28 @@
 
 ### 6.3 HardwareDiagram
 
-SVG 기반. 다음 요소:
-- 서버 박스 2개 (좌·우) — surface 배경, border, 내부에 CPU/RAM 작은 박스
-- 박스 라벨: "SERVER A" / "SERVER B" + 호스트명 (작게)
-- NIC 라벨: "ConnectX-7 mlx5_0" + 200G 표시
-- **NIC chip temp overlay**: NIC indicator 박스 아래에 "CHIP TEMP — 62.4°C" 표시
-  - 색상 코딩 동일 (정상 cyan / 경고 amber / 위험 red, §6.4-bis 참조)
-  - 1Hz 갱신 (NicTempPanel과 동일 데이터 소스)
+크기: 영역 height 280px (1080p 기준 — 작아 보이지 않게 충분히 크게). SVG viewBox `0 0 1820 280`, 컨테이너에 가깝게 가득 차도록 비율 조정.
+
+요소:
+- **서버 박스 2개** (좌·우, 각 540×240px) — surface 배경, border, 내부에 CPU/RAM/PCIe 박스
+- **서버 라벨** (박스 상단, 22px Bold mono):
+  - 좌: `dg5W-H200NVL-4`
+  - 우: `dg5R-PRO6000SE-10`
+- **LIQUID-COOLED 태그** (서버 라벨 바로 아래, 11px tracking-wider, accent ◇ 아이콘): 서버 자체가 액냉 시스템임을 명시
+- **NIC indicator 박스** (각 서버 박스 안): "ConnectX-7 · mlx5_0" 라벨 (16px accent)
+- **NIC IC TEMP row** (NIC 박스 아래): "IC TEMP" 태그 + 18px 굵은 값 + "°C" — 1Hz 갱신
+- **광 트랜시버 박스 2개** (두 서버 사이): 각 160×100px
+  - "QSFP56" 라벨 + "OPTICAL · LIQUID-COOLED" 서브라벨
+  - "MODULE" 태그 + 14px 굵은 값
+- **연결 라인 모드**:
+  - 단방향 (UNI): 트랜시버 사이 1줄 (y=170)
+  - 양방향 (BIDIR): 2줄 (y=160, y=180), 위 좌→우 / 아래 우→좌
+- **NIC ↔ Transceiver 짧은 stub 라인**: 항상 표시
+- **패킷 흐름 dot**: 트랜시버 사이 (x: 800 → 1020) cyan dot 5개 stagger 흐름
+
+색상 코딩 (NIC IC overlay + Transceiver Module overlay 공통):
+- IC: < 75°C cyan / 75~85 amber / ≥85 red
+- Module: < 65°C cyan / 65~75 amber / ≥75 red (트랜시버 한계가 더 낮음)
 - **연결 라인 모드**:
   - **UNI (단방향)**: 1줄 라인 (중앙 y=115). 좌→우 dot 흐름
   - **BIDIR (양방향)**: 2줄 라인 (위 y=105, 아래 y=125). 위는 좌→우, 아래는 우→좌, dot 동시 흐름
@@ -176,29 +193,32 @@ SVG 기반. 다음 요소:
 차트 영역을 좌우 분할(2fr : 1fr): 좌측 BandwidthChart, 우측 NicTempPanel.
 
 NicTempPanel 내부:
-1. 헤더: "NIC CHIP TEMPERATURE" 라벨 + LIVE 인디케이터
-2. 두 타일 (가로 1:1 grid):
-   - SERVER A — JetBrains Mono 36px 굵은 숫자 + "°C" 단위
-   - SERVER B — 동일
-   - 좌측에 3px accent 사이드바(색상 코딩)
-3. 시계열 미니 차트 (ECharts):
-   - 두 라인: Server A (cyan), Server B (amber `#f59e0b`)
-   - Y축: 30 ~ 90°C
-   - smooth: true, symbol: none, 라인 두께 2
-   - 범례: 우상단 작게
+1. 헤더: "NIC IC & MODULE TEMPERATURE" 라벨 + LIVE 인디케이터
+2. **4 타일 (2×2 grid)**:
+   - 1행: `IC · SERVER A`, `IC · SERVER B` (solid 좌측 사이드바)
+   - 2행: `MODULE · SERVER A`, `MODULE · SERVER B` (dashed 좌측 사이드바 — IC와 시각 구분)
+   - 각 타일: JetBrains Mono 28px 굵은 숫자 + "°C" 단위
+   - 색상 코딩은 컴포넌트별 임계값(§6.3) 따름
+3. **시계열 미니 차트 (ECharts) — 4개 라인**:
+   - `IC A`: cyan solid
+   - `IC B`: amber solid
+   - `MOD A`: cyan dashed
+   - `MOD B`: amber dashed
+   - 색은 서버 구분(A=cyan, B=amber), 선 스타일은 컴포넌트 구분(IC=solid, Module=dashed)
+   - Y축: 25 ~ 90°C
+   - 범례: 우상단 작게 (4개 항목)
    - X축: BW 차트와 동일한 elapsed time
 
-색상 코딩 (타일·다이어그램 overlay 공통):
-| 범위 | 색 | 시각 표시 |
-|------|---|----------|
-| < 75°C | accent (cyan) | 정상 |
-| 75 ~ 85°C | warning (amber) | 사이드바 + 카드 글로우 |
-| ≥ 85°C | danger (red) | 사이드바 + 카드 글로우 강함 |
-| 측정 실패 | muted | "—°C" 표시 |
+타일 색상 코딩 표시:
+| 컴포넌트 | 정상 | 경고 | 위험 |
+|---------|------|------|------|
+| IC | < 75°C cyan | 75~85°C amber + 카드 글로우 | ≥85°C red + 강한 글로우 |
+| Module | < 65°C cyan | 65~75°C amber + 카드 글로우 | ≥75°C red + 강한 글로우 |
+| 측정 실패 | "—°C" muted | | |
 
 폴링: 1Hz로 항상 동작 (idle/running 무관). 측정 중에는 시계열에 누적 push, IDLE에선 카드만 갱신.
 
-데이터 소스 → `.claude/rules/measurement.md` "NIC 칩셋 온도 텔레메트리" 섹션 + SSE `event: nic_temp`
+데이터 소스 → `.claude/rules/measurement.md` "NIC IC + 광 모듈 온도 텔레메트리" 섹션 + SSE `event: nic_temp` (4 채널)
 
 ### 6.5 BandwidthChart
 

@@ -43,7 +43,7 @@
 
   /* ─── HEADER ─── */
   header {
-    height: 64px;
+    height: 72px;
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -54,21 +54,24 @@
   .brand {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
   }
-  .logo {
-    width: 32px; height: 32px;
-    border-radius: 6px;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--bg); font-weight: 800; font-size: 14px;
+  .brand-logo {
+    height: 40px;
+    width: auto;
+    display: block;
   }
-  .brand-text {
-    display: flex; align-items: center; gap: 12px;
-    font-weight: 700; font-size: 16px; letter-spacing: 0.05em;
+  .brand-sep {
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 18px;
   }
-  .brand-text .sep { color: var(--muted); font-weight: 400; }
-  .brand-text .title { color: var(--text-2); font-weight: 500; letter-spacing: 0.1em; }
+  .brand-title {
+    color: var(--text-2);
+    font-weight: 600;
+    font-size: 16px;
+    letter-spacing: 0.16em;
+  }
 
   .header-right {
     display: flex; align-items: center; gap: 20px;
@@ -124,9 +127,9 @@
   main {
     flex: 1;
     display: grid;
-    grid-template-rows: 200px 240px 1fr 80px;
-    gap: 24px;
-    padding: 24px 48px;
+    grid-template-rows: 280px 200px 1fr 72px;
+    gap: 20px;
+    padding: 20px 40px;
     overflow: hidden;
   }
 
@@ -137,7 +140,7 @@
     border-radius: 16px;
     position: relative;
     overflow: hidden;
-    padding: 24px;
+    padding: 16px 24px;
   }
   .hardware-svg {
     width: 100%; height: 100%;
@@ -146,55 +149,89 @@
   .server-box {
     fill: var(--surface-2);
     stroke: var(--border);
-    stroke-width: 1;
-    rx: 8;
+    stroke-width: 1.5;
+    rx: 10;
   }
   .server-label {
     fill: var(--text);
     font-family: var(--font-mono);
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.1em;
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
   }
-  .server-sub {
+  .liquid-tag {
     fill: var(--muted);
     font-family: var(--font-mono);
     font-size: 11px;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  .liquid-tag .icon { fill: var(--accent); }
+  .nic-box {
+    fill: var(--bg);
+    stroke: var(--accent);
+    stroke-width: 1.2;
+    rx: 6;
+    opacity: 0.7;
   }
   .nic-label {
     fill: var(--accent);
     font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.1em;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
   }
   .link-line {
     stroke: var(--border);
-    stroke-width: 2;
+    stroke-width: 2.5;
     stroke-linecap: round;
   }
   .link-label {
     fill: var(--muted);
     font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: 0.1em;
+    font-size: 12px;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
+    font-weight: 600;
   }
   .packet-dot {
     fill: var(--accent);
-    filter: drop-shadow(0 0 4px var(--accent));
+    filter: drop-shadow(0 0 5px var(--accent));
   }
   .cpu-ram-box {
     fill: var(--bg);
     stroke: var(--border);
     stroke-width: 1;
-    rx: 3;
+    rx: 4;
   }
   .cpu-ram-text {
+    fill: var(--text-2);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+  }
+  /* 트랜시버 박스 */
+  .transceiver-box {
+    fill: var(--bg);
+    stroke: var(--accent);
+    stroke-width: 1;
+    rx: 5;
+    opacity: 0.8;
+  }
+  .transceiver-label {
+    fill: var(--text-2);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+  .transceiver-sub {
     fill: var(--muted);
     font-family: var(--font-mono);
-    font-size: 8px;
-    letter-spacing: 0.05em;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
   }
 
   /* ─── KPI CARDS ─── */
@@ -207,7 +244,7 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 24px 32px;
+    padding: 20px 28px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -245,7 +282,7 @@
   }
   .card-value {
     font-family: var(--font-mono);
-    font-size: 88px;
+    font-size: 72px;
     font-weight: 700;
     line-height: 1;
     letter-spacing: -0.04em;
@@ -254,7 +291,7 @@
   }
   .card-unit {
     font-family: var(--font-mono);
-    font-size: 22px;
+    font-size: 20px;
     font-weight: 500;
     color: var(--muted);
     letter-spacing: 0.05em;
@@ -318,7 +355,7 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 20px 24px;
+    padding: 16px 20px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -326,41 +363,45 @@
   .nic-tiles {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 12px;
-    margin: 12px 0 16px;
+    grid-auto-rows: 1fr;
+    gap: 10px;
+    margin: 10px 0 12px;
   }
   .nic-tile {
     background: var(--surface-2);
     border: 1px solid var(--border);
     border-left: 3px solid var(--accent);
     border-radius: 10px;
-    padding: 14px 16px;
+    padding: 8px 12px;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .nic-tile.module {
+    border-left-style: dashed;
   }
   .nic-tile.warn {
     border-left-color: var(--warning);
-    box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+    box-shadow: 0 0 14px rgba(245, 158, 11, 0.15);
   }
   .nic-tile.danger {
     border-left-color: var(--danger);
-    box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+    box-shadow: 0 0 14px rgba(239, 68, 68, 0.25);
   }
   .nic-tile-label {
-    font-size: 10px;
+    font-size: 9px;
     color: var(--muted);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     font-weight: 700;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
   }
   .nic-tile-value-row {
     display: flex;
     align-items: baseline;
-    gap: 6px;
+    gap: 4px;
   }
   .nic-tile-value {
     font-family: var(--font-mono);
-    font-size: 36px;
+    font-size: 28px;
     font-weight: 700;
     color: var(--text);
     line-height: 1;
@@ -369,7 +410,7 @@
   }
   .nic-tile-unit {
     font-family: var(--font-mono);
-    font-size: 14px;
+    font-size: 12px;
     color: var(--muted);
     font-weight: 500;
   }
@@ -382,7 +423,7 @@
   .nic-temp-overlay {
     fill: var(--accent);
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 18px;
     font-weight: 700;
     letter-spacing: 0.05em;
   }
@@ -391,15 +432,26 @@
   .nic-temp-tag {
     fill: var(--muted);
     font-family: var(--font-mono);
-    font-size: 9px;
-    letter-spacing: 0.15em;
+    font-size: 11px;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
+    font-weight: 600;
   }
   .nic-temp-divider {
     stroke: var(--border);
     stroke-width: 1;
     opacity: 0.6;
   }
+  /* 트랜시버 module temp overlay */
+  .module-temp-overlay {
+    fill: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .module-temp-overlay.warn { fill: var(--warning); }
+  .module-temp-overlay.danger { fill: var(--danger); }
 
   /* ─── CONTROL ─── */
   .control {
@@ -516,12 +568,9 @@
 
 <header>
   <div class="brand">
-    <div class="logo">DG</div>
-    <div class="brand-text">
-      <span>DEEPGADGET</span>
-      <span class="sep">·</span>
-      <span class="title">P2P PERF MONITOR</span>
-    </div>
+    <img src="logo.svg" alt="logo" class="brand-logo" />
+    <span class="brand-sep">·</span>
+    <span class="brand-title">P2P PERF MONITOR</span>
   </div>
   <div class="header-right">
     <div class="badge" id="badge">
@@ -536,47 +585,78 @@
 
   <!-- ─── HARDWARE DIAGRAM ─── -->
   <section class="hardware">
-    <svg class="hardware-svg" viewBox="0 0 1200 180" preserveAspectRatio="xMidYMid meet">
-      <!-- Server A -->
-      <rect class="server-box" x="120" y="20" width="220" height="150" />
-      <text class="server-label" x="230" y="50" text-anchor="middle">SERVER A</text>
-      <!-- CPU/RAM mini boxes -->
-      <rect class="cpu-ram-box" x="140" y="65" width="50" height="22" />
-      <text class="cpu-ram-text" x="165" y="79" text-anchor="middle">CPU</text>
-      <rect class="cpu-ram-box" x="200" y="65" width="50" height="22" />
-      <text class="cpu-ram-text" x="225" y="79" text-anchor="middle">RAM</text>
-      <rect class="cpu-ram-box" x="260" y="65" width="60" height="22" />
-      <text class="cpu-ram-text" x="290" y="79" text-anchor="middle">PCIe5</text>
+    <svg class="hardware-svg" viewBox="0 0 1820 280" preserveAspectRatio="xMidYMid meet">
+
+      <!-- ════ SERVER A ════ -->
+      <rect class="server-box" x="60" y="20" width="540" height="240"/>
+      <text class="server-label" x="330" y="55" text-anchor="middle">dg5W-H200NVL-4</text>
+      <text class="liquid-tag" x="330" y="80" text-anchor="middle">
+        <tspan class="icon">◇</tspan>  LIQUID-COOLED
+      </text>
+
+      <!-- CPU / RAM / PCIe -->
+      <rect class="cpu-ram-box" x="90" y="100" width="120" height="42"/>
+      <text class="cpu-ram-text" x="150" y="126" text-anchor="middle">CPU</text>
+      <rect class="cpu-ram-box" x="225" y="100" width="120" height="42"/>
+      <text class="cpu-ram-text" x="285" y="126" text-anchor="middle">RAM</text>
+      <rect class="cpu-ram-box" x="360" y="100" width="210" height="42"/>
+      <text class="cpu-ram-text" x="465" y="126" text-anchor="middle">PCIe5 x16</text>
+
       <!-- NIC indicator -->
-      <rect x="155" y="100" width="150" height="30" rx="4"
-            fill="var(--bg)" stroke="var(--accent)" stroke-width="1" opacity="0.6"/>
-      <text class="nic-label" x="230" y="120" text-anchor="middle">CX-7 · mlx5_0</text>
-      <!-- NIC chip temp row (Server A) -->
-      <line class="nic-temp-divider" x1="155" y1="140" x2="305" y2="140"/>
-      <text class="nic-temp-tag" x="160" y="156" text-anchor="start">CHIP TEMP</text>
-      <text id="temp-a" class="nic-temp-overlay" x="300" y="156" text-anchor="end">— °C</text>
+      <rect class="nic-box" x="90" y="160" width="480" height="44"/>
+      <text class="nic-label" x="330" y="188" text-anchor="middle">ConnectX-7 · mlx5_0</text>
 
-      <!-- Server B -->
-      <rect class="server-box" x="860" y="20" width="220" height="150" />
-      <text class="server-label" x="970" y="50" text-anchor="middle">SERVER B</text>
-      <rect class="cpu-ram-box" x="880" y="65" width="50" height="22" />
-      <text class="cpu-ram-text" x="905" y="79" text-anchor="middle">CPU</text>
-      <rect class="cpu-ram-box" x="940" y="65" width="50" height="22" />
-      <text class="cpu-ram-text" x="965" y="79" text-anchor="middle">RAM</text>
-      <rect class="cpu-ram-box" x="1000" y="65" width="60" height="22" />
-      <text class="cpu-ram-text" x="1030" y="79" text-anchor="middle">PCIe5</text>
-      <rect x="895" y="100" width="150" height="30" rx="4"
-            fill="var(--bg)" stroke="var(--accent)" stroke-width="1" opacity="0.6"/>
-      <text class="nic-label" x="970" y="120" text-anchor="middle">CX-7 · mlx5_0</text>
-      <!-- NIC chip temp row (Server B) -->
-      <line class="nic-temp-divider" x1="895" y1="140" x2="1045" y2="140"/>
-      <text class="nic-temp-tag" x="900" y="156" text-anchor="start">CHIP TEMP</text>
-      <text id="temp-b" class="nic-temp-overlay" x="1040" y="156" text-anchor="end">— °C</text>
+      <!-- NIC IC TEMP row -->
+      <line class="nic-temp-divider" x1="90" y1="220" x2="570" y2="220"/>
+      <text class="nic-temp-tag" x="100" y="244" text-anchor="start">IC TEMP</text>
+      <text id="temp-a" class="nic-temp-overlay" x="560" y="244" text-anchor="end">— °C</text>
 
-      <!-- Connection lines (bidir = two lines, uni = one) -->
-      <line class="link-line" x1="340" y1="115" x2="860" y2="115" id="link-up" />
-      <line class="link-line" x1="340" y1="125" x2="860" y2="125" id="link-down" style="visibility: hidden;" />
-      <text class="link-label" x="600" y="100" id="link-label" text-anchor="middle">200G RoCE v2 · MTU 9000</text>
+      <!-- ════ SERVER B ════ -->
+      <rect class="server-box" x="1220" y="20" width="540" height="240"/>
+      <text class="server-label" x="1490" y="55" text-anchor="middle">dg5R-PRO6000SE-10</text>
+      <text class="liquid-tag" x="1490" y="80" text-anchor="middle">
+        <tspan class="icon">◇</tspan>  LIQUID-COOLED
+      </text>
+
+      <rect class="cpu-ram-box" x="1250" y="100" width="120" height="42"/>
+      <text class="cpu-ram-text" x="1310" y="126" text-anchor="middle">CPU</text>
+      <rect class="cpu-ram-box" x="1385" y="100" width="120" height="42"/>
+      <text class="cpu-ram-text" x="1445" y="126" text-anchor="middle">RAM</text>
+      <rect class="cpu-ram-box" x="1520" y="100" width="210" height="42"/>
+      <text class="cpu-ram-text" x="1625" y="126" text-anchor="middle">PCIe5 x16</text>
+
+      <rect class="nic-box" x="1250" y="160" width="480" height="44"/>
+      <text class="nic-label" x="1490" y="188" text-anchor="middle">ConnectX-7 · mlx5_0</text>
+
+      <line class="nic-temp-divider" x1="1250" y1="220" x2="1730" y2="220"/>
+      <text class="nic-temp-tag" x="1260" y="244" text-anchor="start">IC TEMP</text>
+      <text id="temp-b" class="nic-temp-overlay" x="1720" y="244" text-anchor="end">— °C</text>
+
+      <!-- ════ TRANSCEIVERS (양 끝의 광 모듈) ════ -->
+      <!-- Transceiver A -->
+      <rect class="transceiver-box" x="640" y="120" width="160" height="100"/>
+      <text class="transceiver-label" x="720" y="145" text-anchor="middle">QSFP56</text>
+      <text class="transceiver-sub" x="720" y="163" text-anchor="middle">OPTICAL · LIQUID-COOLED</text>
+      <line class="nic-temp-divider" x1="650" y1="178" x2="790" y2="178"/>
+      <text class="nic-temp-tag" x="660" y="196" text-anchor="start">MODULE</text>
+      <text id="mod-a" class="module-temp-overlay" x="785" y="196" text-anchor="end">— °C</text>
+
+      <!-- Transceiver B -->
+      <rect class="transceiver-box" x="1020" y="120" width="160" height="100"/>
+      <text class="transceiver-label" x="1100" y="145" text-anchor="middle">QSFP56</text>
+      <text class="transceiver-sub" x="1100" y="163" text-anchor="middle">OPTICAL · LIQUID-COOLED</text>
+      <line class="nic-temp-divider" x1="1030" y1="178" x2="1170" y2="178"/>
+      <text class="nic-temp-tag" x="1040" y="196" text-anchor="start">MODULE</text>
+      <text id="mod-b" class="module-temp-overlay" x="1165" y="196" text-anchor="end">— °C</text>
+
+      <!-- Connection lines (NIC ↔ Transceiver short stubs) -->
+      <line class="link-line" x1="570" y1="182" x2="640" y2="170"/>
+      <line class="link-line" x1="1180" y1="170" x2="1250" y2="182"/>
+
+      <!-- Connection lines (Transceiver ↔ Transceiver, bidir = two) -->
+      <line class="link-line" x1="800" y1="165" x2="1020" y2="165" id="link-up"/>
+      <line class="link-line" x1="800" y1="175" x2="1020" y2="175" id="link-down" style="visibility: hidden;"/>
+      <text class="link-label" x="910" y="148" id="link-label" text-anchor="middle">200G RoCE v2 · MTU 9000</text>
 
       <!-- Packet dots (animated via JS) -->
       <g id="packets"></g>
@@ -634,24 +714,40 @@
 
     <section class="nic-panel">
       <div class="chart-header">
-        <div class="chart-title">NIC CHIP TEMPERATURE</div>
+        <div class="chart-title">NIC IC &amp; MODULE TEMPERATURE</div>
         <div class="chart-live" id="nic-live" style="opacity: 0;">
           <span class="dot"></span>
           <span>LIVE</span>
         </div>
       </div>
       <div class="nic-tiles">
+        <!-- Row 1: NIC IC -->
         <div class="nic-tile" id="nic-tile-a">
-          <div class="nic-tile-label">SERVER A</div>
+          <div class="nic-tile-label">IC · SERVER A</div>
           <div class="nic-tile-value-row">
             <span class="nic-tile-value" id="nic-a-value">—</span>
             <span class="nic-tile-unit">°C</span>
           </div>
         </div>
         <div class="nic-tile" id="nic-tile-b">
-          <div class="nic-tile-label">SERVER B</div>
+          <div class="nic-tile-label">IC · SERVER B</div>
           <div class="nic-tile-value-row">
             <span class="nic-tile-value" id="nic-b-value">—</span>
+            <span class="nic-tile-unit">°C</span>
+          </div>
+        </div>
+        <!-- Row 2: Optical Module -->
+        <div class="nic-tile module" id="mod-tile-a">
+          <div class="nic-tile-label">MODULE · SERVER A</div>
+          <div class="nic-tile-value-row">
+            <span class="nic-tile-value" id="mod-a-value">—</span>
+            <span class="nic-tile-unit">°C</span>
+          </div>
+        </div>
+        <div class="nic-tile module" id="mod-tile-b">
+          <div class="nic-tile-label">MODULE · SERVER B</div>
+          <div class="nic-tile-value-row">
+            <span class="nic-tile-value" id="mod-b-value">—</span>
             <span class="nic-tile-unit">°C</span>
           </div>
         </div>
@@ -828,26 +924,27 @@ function pushData(bw) {
   }, { lazyUpdate: true });
 }
 
-/* ───────────── NIC TEMP chart + state ───────────── */
+/* ───────────── NIC IC + Module TEMP chart + state ───────────── */
 const nicChartDom = document.getElementById('nic-chart');
 const nicChart = echarts.init(nicChartDom, null, { renderer: 'canvas' });
 
-const nicData = { a: [], b: [], labels: [] };
-const nicTemp = { a: 45.0, b: 47.0 };  // baseline at idle
+const nicData = {
+  icA: [], icB: [], modA: [], modB: [], labels: [],
+};
+// baseline (IDLE): IC ~45°C, Optical Module ~36°C (액냉이라 더 낮은 baseline)
+const nicTemp = { icA: 45.0, icB: 47.0, modA: 36.0, modB: 38.0 };
 
 nicChart.setOption({
   animation: false,
   grid: { left: 36, right: 12, top: 28, bottom: 24 },
   xAxis: {
-    type: 'category',
-    data: [],
-    boundaryGap: false,
+    type: 'category', data: [], boundaryGap: false,
     axisLabel: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 9 },
     axisLine: { lineStyle: { color: '#262626' } },
     axisTick: { show: false },
   },
   yAxis: {
-    type: 'value', min: 30, max: 90, interval: 15,
+    type: 'value', min: 25, max: 90, interval: 15,
     axisLabel: {
       color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 9,
       formatter: '{value}°',
@@ -856,9 +953,9 @@ nicChart.setOption({
     splitLine: { lineStyle: { color: '#1c1c1c' } },
   },
   legend: {
-    data: ['Server A', 'Server B'],
+    data: ['IC A', 'IC B', 'MOD A', 'MOD B'],
     textStyle: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 },
-    top: 0, right: 4, itemWidth: 14, itemHeight: 2, itemGap: 12,
+    top: 0, right: 4, itemWidth: 16, itemHeight: 2, itemGap: 8,
   },
   tooltip: {
     trigger: 'axis',
@@ -867,68 +964,95 @@ nicChart.setOption({
     textStyle: { color: '#fff', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
   },
   series: [
-    {
-      name: 'Server A', type: 'line', data: [], smooth: true, symbol: 'none',
-      lineStyle: { color: '#00d9ff', width: 2 },
-    },
-    {
-      name: 'Server B', type: 'line', data: [], smooth: true, symbol: 'none',
-      lineStyle: { color: '#f59e0b', width: 2 },
-    },
+    { name: 'IC A',  type: 'line', data: [], smooth: true, symbol: 'none',
+      lineStyle: { color: '#00d9ff', width: 2, type: 'solid' } },
+    { name: 'IC B',  type: 'line', data: [], smooth: true, symbol: 'none',
+      lineStyle: { color: '#f59e0b', width: 2, type: 'solid' } },
+    { name: 'MOD A', type: 'line', data: [], smooth: true, symbol: 'none',
+      lineStyle: { color: '#00d9ff', width: 1.6, type: 'dashed' } },
+    { name: 'MOD B', type: 'line', data: [], smooth: true, symbol: 'none',
+      lineStyle: { color: '#f59e0b', width: 1.6, type: 'dashed' } },
   ],
 });
 window.addEventListener('resize', () => nicChart.resize());
 
 function generateNicTemp() {
   const loadFactor = state.running ? (state.config.bidir ? 1.15 : 1.0) : 0;
-  const targetA = 45 + 25 * loadFactor + Math.sin(Date.now() / 12000) * 1.5;
-  const targetB = 47 + 25 * loadFactor + Math.sin(Date.now() / 12000 + 1) * 1.5;
+  const phase = Date.now() / 12000;
+  // IC: baseline 45/47, target 70/72 (running)
+  const targetIcA = 45 + 25 * loadFactor + Math.sin(phase) * 1.5;
+  const targetIcB = 47 + 25 * loadFactor + Math.sin(phase + 1) * 1.5;
+  // Optical module: 액냉으로 IC보다 낮음. baseline 36/38, target 56/58
+  const targetModA = 36 + 20 * loadFactor + Math.sin(phase + 2) * 1.0;
+  const targetModB = 38 + 20 * loadFactor + Math.sin(phase + 3) * 1.0;
   const tau = 0.04;
-  nicTemp.a += (targetA - nicTemp.a) * tau + (Math.random() - 0.5) * 0.4;
-  nicTemp.b += (targetB - nicTemp.b) * tau + (Math.random() - 0.5) * 0.4;
-  nicTemp.a = Math.max(30, Math.min(95, nicTemp.a));
-  nicTemp.b = Math.max(30, Math.min(95, nicTemp.b));
-  return { a: nicTemp.a, b: nicTemp.b };
+  nicTemp.icA  += (targetIcA  - nicTemp.icA ) * tau + (Math.random() - 0.5) * 0.4;
+  nicTemp.icB  += (targetIcB  - nicTemp.icB ) * tau + (Math.random() - 0.5) * 0.4;
+  nicTemp.modA += (targetModA - nicTemp.modA) * tau + (Math.random() - 0.5) * 0.3;
+  nicTemp.modB += (targetModB - nicTemp.modB) * tau + (Math.random() - 0.5) * 0.3;
+  for (const k of ['icA', 'icB', 'modA', 'modB']) {
+    nicTemp[k] = Math.max(25, Math.min(95, nicTemp[k]));
+  }
+  return { icA: nicTemp.icA, icB: nicTemp.icB, modA: nicTemp.modA, modB: nicTemp.modB };
 }
 
-function pushNicData(temp, label) {
-  nicData.a.push(+temp.a.toFixed(1));
-  nicData.b.push(+temp.b.toFixed(1));
+function pushNicData(t, label) {
+  nicData.icA.push(+t.icA.toFixed(1));
+  nicData.icB.push(+t.icB.toFixed(1));
+  nicData.modA.push(+t.modA.toFixed(1));
+  nicData.modB.push(+t.modB.toFixed(1));
   nicData.labels.push(label);
-  if (nicData.a.length > 600) {
-    nicData.a.shift(); nicData.b.shift(); nicData.labels.shift();
+  if (nicData.icA.length > 600) {
+    for (const k of ['icA', 'icB', 'modA', 'modB', 'labels']) nicData[k].shift();
   }
   nicChart.setOption({
     xAxis: { data: nicData.labels },
-    series: [{ data: nicData.a }, { data: nicData.b }],
+    series: [
+      { data: nicData.icA },
+      { data: nicData.icB },
+      { data: nicData.modA },
+      { data: nicData.modB },
+    ],
   }, { lazyUpdate: true });
 }
 
-function applyNicSeverity(tileId, overlayId, t) {
+// IC: warn>=75, danger>=85.  Module(광 트랜시버): warn>=65, danger>=75 (트랜시버 한계가 더 낮음)
+function applySeverity(tileId, overlayId, t, kind) {
   const tile = document.getElementById(tileId);
-  const overlay = document.getElementById(overlayId);
+  const overlay = overlayId ? document.getElementById(overlayId) : null;
+  const warnAt = kind === 'module' ? 65 : 75;
+  const dangerAt = kind === 'module' ? 75 : 85;
   tile.classList.remove('warn', 'danger');
-  overlay.classList.remove('warn', 'danger');
-  if (t >= 85) { tile.classList.add('danger'); overlay.classList.add('danger'); }
-  else if (t >= 75) { tile.classList.add('warn'); overlay.classList.add('warn'); }
+  if (overlay) overlay.classList.remove('warn', 'danger');
+  if (t >= dangerAt) { tile.classList.add('danger'); if (overlay) overlay.classList.add('danger'); }
+  else if (t >= warnAt) { tile.classList.add('warn'); if (overlay) overlay.classList.add('warn'); }
 }
 
-function updateNicVisuals(temp) {
-  document.getElementById('nic-a-value').textContent = temp.a.toFixed(1);
-  document.getElementById('nic-b-value').textContent = temp.b.toFixed(1);
-  document.getElementById('temp-a').textContent = `${temp.a.toFixed(1)}°C`;
-  document.getElementById('temp-b').textContent = `${temp.b.toFixed(1)}°C`;
-  applyNicSeverity('nic-tile-a', 'temp-a', temp.a);
-  applyNicSeverity('nic-tile-b', 'temp-b', temp.b);
+function updateNicVisuals(t) {
+  // 카드 값
+  document.getElementById('nic-a-value').textContent = t.icA.toFixed(1);
+  document.getElementById('nic-b-value').textContent = t.icB.toFixed(1);
+  document.getElementById('mod-a-value').textContent = t.modA.toFixed(1);
+  document.getElementById('mod-b-value').textContent = t.modB.toFixed(1);
+  // 다이어그램 overlay
+  document.getElementById('temp-a').textContent = `${t.icA.toFixed(1)}°C`;
+  document.getElementById('temp-b').textContent = `${t.icB.toFixed(1)}°C`;
+  document.getElementById('mod-a').textContent  = `${t.modA.toFixed(1)}°C`;
+  document.getElementById('mod-b').textContent  = `${t.modB.toFixed(1)}°C`;
+  // 색상 코딩
+  applySeverity('nic-tile-a', 'temp-a', t.icA, 'ic');
+  applySeverity('nic-tile-b', 'temp-b', t.icB, 'ic');
+  applySeverity('mod-tile-a', 'mod-a', t.modA, 'module');
+  applySeverity('mod-tile-b', 'mod-b', t.modB, 'module');
 }
 
-// 항상 동작: 5Hz 로 NIC 온도 업데이트, 측정 중에만 chart push
+// 5Hz: 타일·overlay 항상 갱신, 측정 중에만 chart push
 setInterval(() => {
-  const temp = generateNicTemp();
-  updateNicVisuals(temp);
+  const t = generateNicTemp();
+  updateNicVisuals(t);
   if (state.running) {
     const elapsed = (Date.now() - state.startTime) / 1000;
-    pushNicData(temp, `${elapsed.toFixed(0)}s`);
+    pushNicData(t, `${elapsed.toFixed(0)}s`);
   }
 }, 200);
 
@@ -1022,24 +1146,23 @@ function createDot(cyValue, fromX, toX, delay) {
 }
 
 function startPacketFlow() {
+  // 트랜시버 ↔ 트랜시버 사이 (x: 800 → 1020)에서 흐름
   if (state.config.bidir) {
-    // 두 라인 모두 활성: 위 (A→B), 아래 (B→A)
-    for (let i = 0; i < 6; i++) {
-      createDot(105, 340, 860, i * 0.25);
-      createDot(125, 860, 340, i * 0.25 + 0.125);
+    for (let i = 0; i < 5; i++) {
+      createDot(160, 800, 1020, i * 0.25);              // 위 라인 좌→우
+      createDot(180, 1020, 800, i * 0.25 + 0.125);      // 아래 라인 우→좌
     }
     gsap.to(['#link-up', '#link-down'], {
-      attr: { 'stroke-width': 3 },
+      attr: { 'stroke-width': 3.5 },
       css: { stroke: '#00d9ff' },
       duration: 0.4,
     });
   } else {
-    // 단일 라인 (중앙)
-    for (let i = 0; i < 6; i++) {
-      createDot(115, 340, 860, i * 0.25);
+    for (let i = 0; i < 5; i++) {
+      createDot(170, 800, 1020, i * 0.25);
     }
     gsap.to('#link-up', {
-      attr: { 'stroke-width': 3 },
+      attr: { 'stroke-width': 3.5 },
       css: { stroke: '#00d9ff' },
       duration: 0.4,
     });
@@ -1063,14 +1186,14 @@ function setBidir(on) {
   const linkDown = document.getElementById('link-down');
   const linkLabel = document.getElementById('link-label');
   if (on) {
-    linkUp.setAttribute('y1', '105'); linkUp.setAttribute('y2', '105');
-    linkDown.setAttribute('y1', '125'); linkDown.setAttribute('y2', '125');
+    linkUp.setAttribute('y1', '160'); linkUp.setAttribute('y2', '160');
+    linkDown.setAttribute('y1', '180'); linkDown.setAttribute('y2', '180');
     linkDown.style.visibility = '';
-    linkLabel.setAttribute('y', '85');
+    linkLabel.setAttribute('y', '138');
   } else {
-    linkUp.setAttribute('y1', '115'); linkUp.setAttribute('y2', '115');
+    linkUp.setAttribute('y1', '170'); linkUp.setAttribute('y2', '170');
     linkDown.style.visibility = 'hidden';
-    linkLabel.setAttribute('y', '100');
+    linkLabel.setAttribute('y', '148');
   }
   // 차트 Y축 max 동적 조정
   chart.setOption({ yAxis: { max: on ? 400 : 200, interval: on ? 100 : 50 } });
@@ -1105,8 +1228,11 @@ function startMeasurement() {
   if (state.running) return;
   state.running = true;
   state.data = [];
-  nicData.a = []; nicData.b = []; nicData.labels = [];
-  nicChart.setOption({ xAxis: { data: [] }, series: [{ data: [] }, { data: [] }] });
+  for (const k of ['icA', 'icB', 'modA', 'modB', 'labels']) nicData[k] = [];
+  nicChart.setOption({
+    xAxis: { data: [] },
+    series: [{ data: [] }, { data: [] }, { data: [] }, { data: [] }],
+  });
   state.startTime = Date.now();
   kpiState = { now: 0, avg: 0, peak: 0, lat: null };
 
