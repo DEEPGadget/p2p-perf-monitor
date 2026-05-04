@@ -11,11 +11,18 @@
 | 케이블 | DAC / AOC (200G QSFP56 또는 OSFP, 결정 후 추가 기재) |
 | 토폴로지 | 직결 또는 단일 스위치 경유 (결정 후 기재) |
 
-## 호스트 환경 (가정)
+## 호스트 환경
 
-- OS: Ubuntu 22.04 LTS (or 24.04)
-- Kernel: 5.15+ (RoCE v2 안정 동작)
-- CPU·플랫폼: DeepGadget dg5W 또는 dg5R 추정 (확정 시 갱신)
+| 항목 | Server A | Server B |
+|------|---------|---------|
+| 모델 | **dg5W-H200NVL-4** (Tower 5U) | **dg5R-PRO6000SE-10** (랙마운트 6U) |
+| 가속기 | NVIDIA H200 NVL × 4 | RTX PRO 6000 Server Edition × 10 |
+| OS | Ubuntu 22.04 LTS (or 24.04) | 동일 |
+| Kernel | 5.15+ (RoCE v2 안정 동작) | 동일 |
+| **냉각** | **Liquid-Cooled** (NIC IC + 광 트랜시버 모두) | 동일 |
+
+서버 모델별 상세 스펙(폼팩터·CPU·RAM·전원)은 `~/workspace/projects/inspection-system/context/target-servers.md` 참조.
+본 데모는 위 두 모델의 RoCE P2P 성능을 보여주는 용도. 부스 환경에서는 dg5W·dg5R 한 쌍 + 액냉 시스템 일체가 시연됨.
 
 ## 드라이버·라이브러리
 
@@ -80,15 +87,23 @@ ib_write_bw -d mlx5_0 -F --report_gbits -D 30 <server-A-ip>
 
 위 수치는 측정 도구 출력 파싱 검증·테스트 fixture 작성·UI Y축 max 결정의 기준.
 
+## 광 트랜시버
+
+| 항목 | 값 |
+|------|-----|
+| 모듈 종류 | **QSFP56** (200G optical) — UI 다이어그램 표기와 일치 |
+| 냉각 | Liquid-Cooled (회사 자체 솔루션) |
+| 온도 측정 | `ethtool -m <netdev>` 의 `Module temperature` 또는 `mlxlink --json` |
+| 운영 한계 | ~80°C. UI 임계값 65°C warning / 75°C danger |
+
 ## 결정 대기 항목
 
 | 항목 | 상태 |
 |------|------|
-| 케이블 종류 (DAC/AOC, QSFP56/OSFP) | TBD |
-| 직결 vs 스위치 경유 | TBD |
-| 호스트 플랫폼 (dg5W/dg5R) | TBD |
-| 관리망 IP / RoCE 망 IP 분리 여부 | TBD |
-| MLNX_OFED 정확 버전 | TBD |
+| 케이블 종류 세부 (DAC/AOC, 길이) | QSFP56 가정. AOC/DAC 결정 시 갱신 |
+| 직결 vs 스위치 경유 | 직결 가정 (단순 P2P 데모) |
+| 관리망 IP / RoCE 망 IP 분리 여부 | TBD (Phase 1 시) |
+| MLNX_OFED 정확 버전 | TBD (설치 시) |
 
 이 항목들은 실제 부스 환경 결정 후 본 문서 갱신.
 

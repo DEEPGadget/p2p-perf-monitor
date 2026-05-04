@@ -30,13 +30,14 @@
 - [x] `docs/ui-ux-spec.md`
 - [x] `context/nic-environment.md`
 - [x] `handoff/current-state.md`
-- [ ] `pyproject.toml` 초안 (의존성: fastapi, asyncssh, pydantic, uvicorn, structlog)
-- [ ] `frontend/package.json` 초안 (svelte, sveltekit, vite, tailwind, echarts, gsap, lucide)
-- [ ] GUI 목업 (정적 HTML 또는 SvelteKit 페이지) — 디자인 검증
+- [x] **GUI 목업** (`mockup/index.html` 단일 HTML, ManyCore 로고 적용, mock 데이터로 모든 컴포넌트·모션 검증, 사용자 승인 완료)
+- [ ] `pyproject.toml` 초안 (의존성: fastapi, asyncssh, pydantic, uvicorn, structlog) — Phase 1 시작 시
+- [ ] `frontend/package.json` 초안 (svelte, sveltekit, vite, tailwind, echarts, gsap, lucide) — Phase 3 시작 시
 
 ### 완료 기준
 
 - 모든 문서가 1차 작성 완료 + 사용자 검토 완료
+- GUI 목업 사용자 승인 완료
 - arch-plan-reviewer / impl-plan-reviewer / harness-doc-reviewer 교차검증 1회 이상
 - 검증 피드백 반영 PR 머지
 
@@ -206,23 +207,27 @@ frontend/
       +page.svelte
     lib/
       components/
-        Header.svelte / StatusBadge.svelte
-        HardwareDiagram.svelte
-        KpiCards.svelte
-        BandwidthChart.svelte
-        ControlPanel.svelte
+        Header.svelte           로고 PNG + bar + 타이틀 (하단 정렬)
+        StatusBadge.svelte      IDLE/CONNECTING/RUNNING/ERROR
+        HardwareDiagram.svelte  SVG (서버×2 + 트랜시버×2 + IC/MOD overlay + packet flow)
+        KpiCards.svelte         BW NOW/AVG/PEAK/LAT 4 카드 (라벨 좌측 accent bar)
+        BandwidthChart.svelte   ECharts 시계열 (Y축 동적 200/400)
+        NicTempPanel.svelte     4 타일 (IC/MOD × dg5W/dg5R) + 4-line 시계열
+        ControlPanel.svelte     Tool/MsgSize/Duration/Direction/Start
       stores/
-        measurement.svelte.ts
-        session.svelte.ts
+        measurement.svelte.ts   BW 이벤트
+        nic_telemetry.svelte.ts NIC IC + Module 4채널 (1Hz)
+        session.svelte.ts       세션 상태
       utils/
         sse.ts
         format.ts
         api.ts
       types/
-        api.ts
+        api.ts                   백엔드 Pydantic 모델 1:1
     app.css
   static/
-    logo.svg
+    manycore_logo_white.png      mockup/ 에서 이동
+    manycore_logo_black.png
     fonts/...
   svelte.config.js
   tailwind.config.js
@@ -232,14 +237,14 @@ frontend/
 
 ### 작업 순서
 
-1. **스캐폴드**: `pnpm create svelte@latest frontend` (skeleton + TS + adapter-static)
-2. **디자인 토큰**: `tailwind.config.js`에 색상·폰트 등록, `app.css`에 폰트 @font-face
-3. **stores**: `measurement.svelte.ts` (이벤트 버퍼 + KPI 파생값), `session.svelte.ts` (상태)
-4. **utils**: `sse.ts` (EventSource 래퍼), `format.ts` (Gbps/µs 포매터), `api.ts` (start/stop)
-5. **컴포넌트**: 위에서 아래 순으로 — Header → StatusBadge → HardwareDiagram → KpiCards → BandwidthChart → ControlPanel
-6. **모션**: 각 컴포넌트에 GSAP 통합. UI/UX 사양 §7 timelines 구현
+1. **스캐폴드**: `pnpm create svelte@latest frontend` (skeleton + TS + adapter-static), `mockup/manycore_logo_*.png` → `frontend/static/`로 이동
+2. **디자인 토큰**: `tailwind.config.js`에 색상·폰트 등록 (mockup의 CSS 변수 그대로 이식), `app.css`에 폰트 @font-face
+3. **stores**: `measurement.svelte.ts` (BW 이벤트 버퍼 + KPI 파생값), `nic_telemetry.svelte.ts` (4채널 IC/MOD), `session.svelte.ts` (상태)
+4. **utils**: `sse.ts` (EventSource 래퍼, `measurement` + `nic_temp` + `status` + `error` 4 이벤트 분기), `format.ts` (Gbps/µs/°C 포매터), `api.ts` (start/stop)
+5. **컴포넌트**: mockup 구현 그대로 포팅 — Header → StatusBadge → HardwareDiagram → KpiCards → BandwidthChart → NicTempPanel → ControlPanel
+6. **모션**: 각 컴포넌트에 GSAP 통합. UI/UX 사양 §7 timelines + mockup 코드의 timeline 그대로 이식
 7. **통합**: `+page.svelte`에서 모든 컴포넌트 조립
-8. **테스트**: utils 단위 테스트, 컴포넌트 렌더링 테스트
+8. **테스트**: utils 단위 테스트, 컴포넌트 렌더링 테스트, mockup 시각 회귀 비교 (수동)
 
 ### 완료 기준
 
@@ -247,6 +252,7 @@ frontend/
 - `pnpm build` 후 `frontend/build/` 정적 파일 생성, FastAPI에 마운트해서 동일 동작
 - 1080p 화면에서 레이아웃 깨짐 없음
 - 모션 60fps 유지 (Chrome DevTools Performance)
+- **mockup 1차 결과물과 시각 일관성 확인** (헤더 정렬, 4채널 타일, 트랜시버 박스, BIDIR 모드 토글 등 모두 재현)
 
 ### 위험·결정
 

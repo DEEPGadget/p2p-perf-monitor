@@ -24,22 +24,25 @@ frontend/
       +page.svelte           메인 단일 페이지
     lib/
       components/
-        Header.svelte
-        HardwareDiagram.svelte
-        KpiCards.svelte
-        BandwidthChart.svelte
-        ControlPanel.svelte
+        Header.svelte               로고 PNG + bar + 타이틀
         StatusBadge.svelte
+        HardwareDiagram.svelte      SVG: 서버×2 + 트랜시버×2 + IC/MOD overlay
+        KpiCards.svelte             BW NOW/AVG/PEAK/LAT
+        BandwidthChart.svelte       ECharts 시계열
+        NicTempPanel.svelte         4 타일 (IC/MOD × dg5W/dg5R) + 4-line 시계열
+        ControlPanel.svelte
       stores/
-        measurement.svelte.ts   Svelte 5 runes 기반 store + SSE 구독
-        session.svelte.ts        세션 상태 (IDLE/RUNNING/ERROR)
+        measurement.svelte.ts       BW 이벤트 store (Svelte 5 runes)
+        nic_telemetry.svelte.ts     NIC IC + Module 4채널 (1Hz)
+        session.svelte.ts           세션 상태 (IDLE/CONNECTING/RUNNING/ERROR)
       utils/
         sse.ts
-        format.ts                숫자 포매팅 (Gbps, µs)
-        api.ts                   POST /api/start, /api/stop
+        format.ts                   숫자 포매팅 (Gbps, µs, °C)
+        api.ts                      POST /api/start, /api/stop
     app.css                  Tailwind directives + custom CSS vars
   static/
-    logo.svg
+    manycore_logo_white.png         다크 헤더용 (현재 사용)
+    manycore_logo_black.png         라이트 배경 대비용 (보관)
     fonts/                   self-hosted (CDN 미사용)
   svelte.config.js
   vite.config.ts
@@ -99,18 +102,22 @@ frontend/
 
 ## SSE 구독 (`lib/utils/sse.ts`)
 
+`/api/stream` 단일 채널에서 4종 이벤트가 발행됨 → 각각 별도 store에 dispatch.
+
 ```typescript
-export function subscribeMeasurement(onEvent: (e: MeasurementEvent) => void) {
+export function subscribe() {
   const es = new EventSource('/api/stream')
-  es.addEventListener('measurement', (e) => onEvent(JSON.parse(e.data)))
-  es.addEventListener('status', (e) => sessionStore.update(JSON.parse(e.data)))
-  es.addEventListener('error', (e) => sessionStore.setError(JSON.parse(e.data)))
+  es.addEventListener('measurement', (e) => measurementStore.push(JSON.parse(e.data)))
+  es.addEventListener('nic_temp',    (e) => nicTelemetryStore.push(JSON.parse(e.data)))
+  es.addEventListener('status',      (e) => sessionStore.update(JSON.parse(e.data)))
+  es.addEventListener('error',       (e) => sessionStore.setError(JSON.parse(e.data)))
   return () => es.close()
 }
 ```
 
 - EventSource 자동 재연결 사용
-- store 구독자가 0이 되면 close
+- `measurement`: 측정 중에만 발행 (10Hz). `nic_temp`: IDLE/RUNNING 무관 항상 발행 (1Hz)
+- store 구독자가 0이 되면 `es.close()`
 
 ## 빌드 & 정적 서빙
 

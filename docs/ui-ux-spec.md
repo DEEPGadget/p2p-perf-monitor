@@ -63,7 +63,8 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│ [회사 로고 SVG]   ·   P2P PERF MONITOR              ● RUNNING  10:42:13  │ HEADER  (h:72px)
+│ MANYCORE  │  P2P PERF MONITOR                       ● RUNNING  10:42:13  │ HEADER  (h:72px)
+│  (PNG)   bar         ↑  align-items: flex-end  (하단 정렬)               │
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │ ┌──────────────────────┐ ┌─QSFP56─┐  ●●●●  ┌─QSFP56─┐ ┌──────────────────┐│ HARDWARE
@@ -75,11 +76,10 @@
 │ └──────────────────────┘                              └──────────────────┘ │
 │                                                                          │
 │   ┌─────────────┐ ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │ KPI CARDS
-│   │             │ │             │ │             │ │             │       │ (h:240px)
-│   │   187.4     │ │   175.2     │ │   198.5     │ │    1.8      │       │
-│   │             │ │             │ │             │ │             │       │
-│   │   Gb/s      │ │   Gb/s      │ │   Gb/s      │ │    µs       │       │
-│   │   NOW       │ │   AVG       │ │   PEAK      │ │   LATENCY   │       │
+│   │ ▌NOW        │ │ ▌AVG        │ │ ▌PEAK       │ │ ▌LATENCY    │       │ (h:200px)
+│   │             │ │             │ │             │ │             │       │ 라벨 좌측
+│   │  187.4 Gb/s │ │ 175.2 Gb/s  │ │ 198.5 Gb/s  │ │   1.8 µs    │       │ 4×14 accent bar
+│   │             │ │             │ │             │ │             │       │ 폰트 72px
 │   └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
 │                                                                          │
 │   ┌──────────────────────────────────────────┐  ┌─[NIC IC & MODULE]─┐  │ MAIN CHARTS
@@ -101,21 +101,25 @@
 
 영역 비율 (1080p 기준):
 - HEADER 72px + FOOTER 32px = 104px 고정
-- 잔여 ≈ 976px 분할: HARDWARE 280px / KPI 200px / CHART 1fr (≈324px) / CONTROL 72px / gaps·여백 100px
+- main padding 20px 40px, gap 20px → gaps·여백 ≈ 100px
+- 잔여 ≈ 976px 분할: HARDWARE 280px / KPI 200px / CHART(좌 BW + 우 NIC TEMP) 1fr (≈324px) / CONTROL 72px
 
-KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 영역 확대분 보전)
+KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 확대분 보전)
 4K 환경: 폰트·박스 1.5×, 차트 영역 비례 확대
 
 ## 6. 컴포넌트 사양
 
 ### 6.1 Header
 
-- 좌: **회사 로고 이미지(SVG, height 40px)** + 구분점 "·" + "P2P PERF MONITOR" 텍스트
-  - 로고 자산 위치: `frontend/static/logo.svg` (실제 파일 받기 전까지는 `mockup/logo.svg` 의 placeholder 사용)
-  - 텍스트(DEEPGADGET 등)는 로고 이미지 안에 포함되므로 별도 워드마크 표시 안 함
+- 좌: **ManyCore 로고 PNG** (height 26px, 다크 헤더용 흰색 워드마크) + **1px × 18px vertical bar** (muted) + **"P2P PERF MONITOR"** 텍스트 (Inter 17px Bold, letter-spacing 0.20em)
+- 좌측 영역 정렬: `align-items: flex-end` (로고·바·타이틀 모두 **하단 정렬**). 바는 `margin-bottom: 1px`로 텍스트 디센더 라인에 미세 보정
 - 우: 상태 배지 (StatusBadge) + 현재 시각 (mono, hh:mm:ss)
 - 높이: 72px (로고 + 여백)
 - 배경: bg, 하단 1px border
+- 자산 위치 (본 구현):
+  - `frontend/static/manycore_logo_white.png` — 다크 헤더용
+  - `frontend/static/manycore_logo_black.png` — 라이트 배경 대비용 (보관)
+- 워드마크에 "ManyCore" 텍스트가 이미 포함 → 별도 회사명 텍스트 표시 안 함
 
 ### 6.2 StatusBadge
 
@@ -151,21 +155,14 @@ KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 영역 확대분 
 색상 코딩 (NIC IC overlay + Transceiver Module overlay 공통):
 - IC: < 75°C cyan / 75~85 amber / ≥85 red
 - Module: < 65°C cyan / 65~75 amber / ≥75 red (트랜시버 한계가 더 낮음)
-- **연결 라인 모드**:
-  - **UNI (단방향)**: 1줄 라인 (중앙 y=115). 좌→우 dot 흐름
-  - **BIDIR (양방향)**: 2줄 라인 (위 y=105, 아래 y=125). 위는 좌→우, 아래는 우→좌, dot 동시 흐름
-  - 모드 전환은 `ControlPanel`의 DIRECTION 토글 (§6.6)에 연동
-  - 라벨("200G RoCE v2 · MTU 9000") 위치도 모드에 맞게 이동 (UNI: y=100, BIDIR: y=85)
-- **패킷 흐름**: 라인 위에 cyan dot (지름 8px, glow) 반복 이동
-  - GSAP timeline, 속도 = `bw_avg_gbps`에 비례
-  - 단방향: 6 dots 좌→우 stagger
-  - 양방향: 위 라인 6 dots(좌→우) + 아래 라인 6 dots(우→좌) — 아래는 0.125s offset으로 시각적 분리
-  - IDLE 상태: dot 미표시
-  - RUNNING: 정상 속도
-  - peak 근접 시: dot 글로우 강화 + 잔상 라인 추가
+
+연결 라인·패킷 흐름 동작:
+- 라벨 "200G RoCE v2 · MTU 9000" 위치: UNI y=148, BIDIR y=138
+- IDLE: dot 미표시. RUNNING: dot stream 등장. peak 근접 시 dot glow + 잔상 강화
+- GSAP timeline 속도는 `bw_avg_gbps`에 비례
 
 레이어:
-1. 정적 다이어그램 (서버 박스 + 라인 + 라벨)
+1. 정적 다이어그램 (서버 박스 + 트랜시버 + 라인 + 라벨)
 2. 흐름 dot 레이어 (GSAP 제어)
 3. (옵션, Phase 4) Threlte 3D 모드 토글
 
@@ -174,14 +171,16 @@ KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 영역 확대분 
 4개 카드: NOW / AVG / PEAK / LATENCY
 
 각 카드:
-- 배경: surface, border, rounded-2xl
-- 패딩: 32px
-- 레이아웃: 라벨(상단) + 숫자(중앙 거대) + 단위(하단 작게)
-- 숫자 폰트: JetBrains Mono Bold 88~96px, color text
-- 단위: JetBrains Mono 22~24px, color muted
+- 배경: surface, border, rounded-2xl (16px)
+- 패딩: 20px 28px
+- 레이아웃: 라벨(상단) + 숫자(하단 큰 폰트) + 단위(숫자 우측 작게)
+- 숫자 폰트: **JetBrains Mono Bold 72px**, color text (이전 88px에서 축소 — HARDWARE 영역 확대분 보전)
+- 단위: JetBrains Mono Medium 20px, color muted
 - **라벨 강조**: Inter 13px **Bold**, uppercase, tracking 0.18em, color text-2 (밝게)
   - 좌측에 4×14px accent 컬러 bar(둥근 사각형, 글로우) 부착해서 시각적 강조
   - "라벨이 묻히는" 인상을 피하고 카드의 의미를 빠르게 인지하도록 함
+
+4K 환경에서는 폰트 1.5× (108px), 패딩 비례 확대.
 
 업데이트 모션:
 - 신규 값 도착 시 GSAP `to(value, 0.4s, "power2.out")` 카운터 트윈
@@ -193,9 +192,7 @@ KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 영역 확대분 
 차트 영역을 좌우 분할(2fr : 1fr): 좌측 BandwidthChart, 우측 NicTempPanel.
 
 NicTempPanel 내부:
-1. 헤더: "NIC IC & MODULE TEMPERATURE" 라벨 + LIVE 인디케이터
-**헤더 표기**: `NIC IC & MODULE TEMPERATURE` + 우측에 `◇ LIQUID-COOLED` 액냉 배지 (accent border + accent 색)
-
+1. 헤더 좌: `NIC IC & MODULE TEMPERATURE` 텍스트 + 우측에 `◇ LIQUID-COOLED` 액냉 배지 (accent border + accent 텍스트, pill 형태). 헤더 우끝: LIVE 인디케이터
 2. **4 타일 (2×2 grid)** — 라벨에 서버 모델명 직접 표기:
    - 1행: `IC · dg5W`, `IC · dg5R` (solid 좌측 사이드바)
    - 2행: `MODULE · dg5W`, `MODULE · dg5R` (dashed 좌측 사이드바 — IC와 시각 구분)
@@ -355,12 +352,15 @@ ECharts line chart.
 
 | 자산 | 위치 | 비고 |
 |------|------|------|
-| 회사 로고 SVG | `frontend/static/logo.svg` | 흰/검 두 버전 (다크 배경용 흰색) |
+| ManyCore 로고 (다크 헤더용) | `frontend/static/manycore_logo_white.png` | 5000×1000 원본, height 26px로 자동 스케일 |
+| ManyCore 로고 (라이트 배경용) | `frontend/static/manycore_logo_black.png` | 보관용 (현재 미사용) |
 | 폰트 | `frontend/static/fonts/` | Inter, JetBrains Mono — self-hosted |
 | 아이콘 | Lucide Svelte | 컴포넌트로 import |
 
+mockup 단계 자산은 `mockup/manycore_logo_{white,black}.png`. Phase 3 SvelteKit 셋업 시 `frontend/static/`로 이동.
+
 ## 13. 검증
 
-- 디자인 1차 검증: `frontend/` 정적 목업 (실 SSE 없이 mock 데이터)
-- 2차 검증: `tool=mock` 백엔드 + SvelteKit dev 서버 통합
-- 최종 검증: 실 200G NIC 환경 측정 + 부스 1080p 디스플레이
+- **1차 (완료)**: `mockup/index.html` 단일 HTML — mock 데이터로 디자인 톤·레이아웃·모션 검증, 사용자 승인 완료
+- **2차**: SvelteKit Phase 3 — `tool=mock` 백엔드 + SvelteKit dev 서버 통합. mockup과 동일 시각·동작 재현 검증
+- **최종**: 실 200G NIC 환경 + 부스 1080p 디스플레이 30분 무인 가동 (Phase 4)

@@ -66,22 +66,31 @@ frontend/                  SvelteKit
     lib/
       components/
         Header.svelte
-        HardwareDiagram.svelte
-        KpiCards.svelte
-        BandwidthChart.svelte
-        ControlPanel.svelte
         StatusBadge.svelte
+        HardwareDiagram.svelte    SVG (서버·트랜시버·NIC IC overlay·packet flow)
+        KpiCards.svelte           BW NOW/AVG/PEAK/LAT 4 카드
+        BandwidthChart.svelte     ECharts 시계열
+        NicTempPanel.svelte       4 타일 (IC/MOD × dg5W/dg5R) + 4-line 시계열
+        ControlPanel.svelte       Tool/MsgSize/Duration/Direction/Start
       stores/
-        measurement.ts     Svelte store + SSE 구독
+        measurement.svelte.ts     BW 이벤트 store
+        nic_telemetry.svelte.ts   NIC IC + Module 온도 store (1Hz)
+        session.svelte.ts         IDLE/CONNECTING/RUNNING/ERROR
       utils/
         sse.ts
         format.ts
-    app.css                Tailwind directives
+        api.ts
+      types/
+        api.ts                    백엔드 Pydantic 모델 1:1 매핑
+    app.css                Tailwind directives + 디자인 토큰
   static/
-    logo.svg
+    manycore_logo_white.png       다크 헤더용 (현재 사용)
+    manycore_logo_black.png       라이트 배경 대비용 (보관)
+    fonts/                        Inter, JetBrains Mono — self-hosted
   svelte.config.js         (adapter-static)
   vite.config.ts
   tailwind.config.js
+  tsconfig.json
   package.json
 
 tests/                     Python pytest
@@ -186,16 +195,21 @@ main 직접 push 금지. 브랜치 명명: `feature/`, `fix/`, `chore/`
 
 | # | 항목 | 현재 가정 | 확정 시 영향 |
 |---|------|----------|-------------|
-| - | NIC GID index | 3 (RoCE v2 통상값) | `context/nic-environment.md` |
+| - | NIC GID index | 3 (RoCE v2 통상값). Phase 1 시 `show_gids`로 확정 | `context/nic-environment.md` |
 | - | MTU / Jumbo frame | 9000 (성능 최대치 가정) | 측정 명령 옵션 |
-| - | 부스 디스플레이 해상도 | 1080p / 4K 둘 다 대응 | `docs/ui-ux-spec.md` |
-| - | 회사 로고 SVG | 추후 제공 | `frontend/static/logo.svg` |
+| - | 부스 디스플레이 해상도 | 1080p 우선, 4K 비례 대응 | `docs/ui-ux-spec.md` |
+| - | 케이블 종류 (DAC/AOC, QSFP56/OSFP) | QSFP56 가정 (UI에 반영) | `context/nic-environment.md` |
+| - | 직결 vs 스위치 경유 | 직결 가정 | 측정 결과 해석 |
 
 ## 현재 구현 상태
 
 > 진행 현황·다음 작업 → `handoff/current-state.md`
 
-문서 단계 (1차 작성 완료, 교차검증 대기). GUI 목업 → `frontend/` 정적 페이지로 디자인 검증 진행.
+**Phase 0 진행 중 (문서 + GUI 목업 완료, 교차검증 대기)**:
+- 문서 1차 작성 완료 (CLAUDE.md / `.claude/rules/`×6 / `docs/`×2 / `context/`×1 / `handoff/`)
+- GUI 목업 완료 (`mockup/index.html` 단일 HTML, ManyCore 로고 적용, mock 데이터로 모든 컴포넌트·모션 검증)
+- 코드(app/, frontend/) 미작성 — Phase 1부터 시작
+
 구현 계획서 → `docs/implementation-plan.md`. UI/UX 사양 → `docs/ui-ux-spec.md`.
 
 ## Git Repo
