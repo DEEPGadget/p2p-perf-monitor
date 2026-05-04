@@ -1,0 +1,23 @@
+{
+  "start": {
+    "connected": [{"socket": 5, "local_host": "25.47.1.11", "remote_host": "25.47.1.10"}],
+    "version": "iperf 3.16",
+    "test_start": {"protocol": "TCP", "num_streams": 8, "duration": 10, "bytes": 0, "reverse": false, "bidir": true}
+  },
+  "intervals": [
+    {
+      "streams": [],
+      "sum_sent":     {"start": 0,   "end": 1.0, "seconds": 1.0, "bytes": 11000000000, "bits_per_second": 88000000000.0},
+      "sum_received": {"start": 0,   "end": 1.0, "seconds": 1.0, "bytes": 10800000000, "bits_per_second": 86400000000.0}
+    },
+    {
+      "streams": [],
+      "sum_sent":     {"start": 1.0, "end": 2.0, "seconds": 1.0, "bytes": 11050000000, "bits_per_second": 88400000000.0},
+      "sum_received": {"start": 1.0, "end": 2.0, "seconds": 1.0, "bytes": 10750000000, "bits_per_second": 86000000000.0}
+    }
+  ],
+  "end": {
+    "sum_sent":     {"bits_per_second": 88200000000.0},
+    "sum_received": {"bits_per_second": 86200000000.0}
+  }
+}

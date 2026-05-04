@@ -1,0 +1,9 @@
+{
+  "start": {
+    "connected": [],
+    "version": "iperf 3.16"
+  },
+  "intervals": [],
+  "end": {},
+  "error": "unable to connect to server: Connection refused"
+}
