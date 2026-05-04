@@ -1,0 +1,99 @@
+# NIC 환경
+
+## 하드웨어
+
+| 항목 | 값 |
+|------|-----|
+| NIC 모델 | NVIDIA Mellanox **ConnectX-7** (CX-7) |
+| 포트 속도 | **200 Gb/s** (HDR / NDR200, RoCE v2) |
+| 포트 수 | 단일 포트 사용 (서버당 1개 NIC) |
+| 폼팩터 | PCIe Gen5 x16 |
+| 케이블 | DAC / AOC (200G QSFP56 또는 OSFP, 결정 후 추가 기재) |
+| 토폴로지 | 직결 또는 단일 스위치 경유 (결정 후 기재) |
+
+## 호스트 환경 (가정)
+
+- OS: Ubuntu 22.04 LTS (or 24.04)
+- Kernel: 5.15+ (RoCE v2 안정 동작)
+- CPU·플랫폼: DeepGadget dg5W 또는 dg5R 추정 (확정 시 갱신)
+
+## 드라이버·라이브러리
+
+| 항목 | 버전 가정 | 비고 |
+|------|----------|------|
+| MLNX_OFED | 24.10 LTS 또는 최신 | `mlnxofedinstall --upstream-libs --dpdk` 권장 옵션 검토 |
+| `rdma-core` | OFED 동봉 | 시스템 패키지가 아닌 OFED 패키지 사용 |
+| `perftest` | OFED 동봉 (`/usr/bin/ib_write_bw` 등) | 별도 빌드 불필요 |
+| `iperf3` | apt 패키지 또는 OFED 동봉 | TCP 비교용 |
+
+설치 절차는 운영 문서(`README.md`)에 기재. 본 파일은 환경 가정 기록.
+
+## 네트워크 설정
+
+| 항목 | 값 |
+|------|-----|
+| RoCE 버전 | **v2** (UDP 캡슐화) |
+| GID index | 기본 **3** (RoCE v2 IPv4). `show_gids` 명령으로 확정 |
+| MTU | 기본 9000 (Jumbo) — 스위치도 동일 설정 필요 |
+| PFC / ECN | RoCE 무손실 지원 시 활성. 직결 시 보통 불필요 |
+| IP 대역 | 결정 후 기재 (관리망과 분리 권장) |
+
+## NIC 디바이스 명명
+
+ConnectX-7 단일 포트 단일 NIC 환경 기준:
+- 디바이스: `mlx5_0` (또는 `mlx5_1`)
+- 인터페이스: `enp<...>s<...>` (udev 따름)
+- 두 서버 모두 동일 명명 권장 (`NIC_DEVICE_A`, `NIC_DEVICE_B`)
+
+## 사전 검증 명령
+
+```bash
+# RDMA 디바이스 존재 확인
+ibstat
+ibv_devices
+
+# GID 테이블 확인 (RoCE v2 GID index 결정)
+show_gids
+# 출력 예: mlx5_0  1  3  fe80::...:0000  10.x.x.10  v2  enp1s0f0np0
+#                       ^                              ^
+#                       GID index                      RoCE 버전
+
+# Loopback BW (측정 도구 동작 확인)
+ib_write_bw -d mlx5_0 -F -D 5 &
+ib_write_bw -d mlx5_0 -F -D 5 localhost
+
+# 두 서버 간 직접 측정 (실 환경)
+# Server A:
+ib_write_bw -d mlx5_0 -F --report_gbits -D 30
+# Server B:
+ib_write_bw -d mlx5_0 -F --report_gbits -D 30 <server-A-ip>
+```
+
+## 200G RoCE 기대 성능
+
+| 측정 | 기대값 | 비고 |
+|------|--------|------|
+| `ib_write_bw` (msg=64K) | 195~199 Gb/s peak | NIC 이론 최대 근접 |
+| `ib_write_bw` (msg=8K) | 180~195 Gb/s peak | 메시지 사이즈 ↓ → BW ↓ |
+| `ib_read_lat` (msg=8B) | 1.5~2.0 µs avg | RDMA Read RTT |
+| `iperf3 -P 8` (TCP) | 150~180 Gb/s | RDMA 대비 GAP 가시화 |
+
+위 수치는 측정 도구 출력 파싱 검증·테스트 fixture 작성·UI Y축 max 결정의 기준.
+
+## 결정 대기 항목
+
+| 항목 | 상태 |
+|------|------|
+| 케이블 종류 (DAC/AOC, QSFP56/OSFP) | TBD |
+| 직결 vs 스위치 경유 | TBD |
+| 호스트 플랫폼 (dg5W/dg5R) | TBD |
+| 관리망 IP / RoCE 망 IP 분리 여부 | TBD |
+| MLNX_OFED 정확 버전 | TBD |
+
+이 항목들은 실제 부스 환경 결정 후 본 문서 갱신.
+
+## 갱신 정책
+
+- NIC 모델·드라이버 변경 시 본 파일 갱신
+- 갱신 시 `.claude/rules/measurement.md`의 호출 규약과 일관성 유지
+- 갱신 주체: 사용자 또는 사용자 지시 받은 에이전트
