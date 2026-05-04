@@ -84,15 +84,15 @@
 │   │   NOW       │ │   AVG       │ │   PEAK      │ │   LATENCY   │       │
 │   └─────────────┘ └─────────────┘ └─────────────┘ └─────────────┘       │
 │                                                                          │
-│   ┌─────────────────────────────────────────────────────────────┐       │ MAIN CHART
-│   │ Bandwidth (Gb/s)                                 ─ live ●   │       │ (h:340px)
-│   │  200 ┤                                                       │       │ ECharts
-│   │  150 ┤      ╱╲    ╱╲╱╲      ╱╲╱╲╱╲                           │       │
-│   │  100 ┤  ╱╲╱╲  ╲╱╲╱    ╲╱╲╱╲╱                                 │       │
-│   │   50 ┤                                                       │       │
-│   │    0 └────────────────────────────────────────────────       │       │
-│   │      0s    10s    20s    30s    40s    50s    60s            │       │
-│   └─────────────────────────────────────────────────────────────┘       │
+│   ┌──────────────────────────────────────────┐  ┌──────────────┐       │ MAIN CHARTS
+│   │ Bandwidth (Gb/s)                  ● live  │  │ NIC CHIP TEMP│       │ (h:340px)
+│   │  200 ┤                                     │  │ ┌─A─┐ ┌─B──┐│       │ left: BW chart
+│   │  150 ┤      ╱╲    ╱╲╱╲      ╱╲╱╲╱╲        │  │ │62°│ │64°││       │ right: temp panel
+│   │  100 ┤  ╱╲╱╲  ╲╱╲╱    ╲╱╲╱╲╱              │  │ └───┘ └────┘│       │  (tile + chart)
+│   │   50 ┤                                     │  │ A:cyan B:amb│       │
+│   │    0 └─────────────────────────           │  │ ╱╲╱╲╱╲╱╲╱   │       │
+│   │      0s    10s    20s    30s    40s   60s │  │ 30 ─── 90°C │       │
+│   └──────────────────────────────────────────┘  └──────────────┘       │
 │                                                                          │
 │   ┌─[ TOOL ▾ ]─[ MSG SIZE ▾ ]─[ DURATION ▾ ]─[ DIR ▾ ]──[ ▶ START ]─┐  │ CONTROL
 │   └───────────────────────────────────────────────────────────────┘     │ (h:80px)
@@ -131,6 +131,9 @@ SVG 기반. 다음 요소:
 - 서버 박스 2개 (좌·우) — surface 배경, border, 내부에 CPU/RAM 작은 박스
 - 박스 라벨: "SERVER A" / "SERVER B" + 호스트명 (작게)
 - NIC 라벨: "ConnectX-7 mlx5_0" + 200G 표시
+- **NIC chip temp overlay**: NIC indicator 박스 아래에 "CHIP TEMP — 62.4°C" 표시
+  - 색상 코딩 동일 (정상 cyan / 경고 amber / 위험 red, §6.4-bis 참조)
+  - 1Hz 갱신 (NicTempPanel과 동일 데이터 소스)
 - **연결 라인 모드**:
   - **UNI (단방향)**: 1줄 라인 (중앙 y=115). 좌→우 dot 흐름
   - **BIDIR (양방향)**: 2줄 라인 (위 y=105, 아래 y=125). 위는 좌→우, 아래는 우→좌, dot 동시 흐름
@@ -167,6 +170,35 @@ SVG 기반. 다음 요소:
 - 신규 값 도착 시 GSAP `to(value, 0.4s, "power2.out")` 카운터 트윈
 - 200G NIC peak 95% 이상 도달 시 카드에 잠시 accent border + glow (0.6s)
 - ERROR 상태: 숫자 dim + "─" 표시
+
+### 6.4-bis NicTempPanel
+
+차트 영역을 좌우 분할(2fr : 1fr): 좌측 BandwidthChart, 우측 NicTempPanel.
+
+NicTempPanel 내부:
+1. 헤더: "NIC CHIP TEMPERATURE" 라벨 + LIVE 인디케이터
+2. 두 타일 (가로 1:1 grid):
+   - SERVER A — JetBrains Mono 36px 굵은 숫자 + "°C" 단위
+   - SERVER B — 동일
+   - 좌측에 3px accent 사이드바(색상 코딩)
+3. 시계열 미니 차트 (ECharts):
+   - 두 라인: Server A (cyan), Server B (amber `#f59e0b`)
+   - Y축: 30 ~ 90°C
+   - smooth: true, symbol: none, 라인 두께 2
+   - 범례: 우상단 작게
+   - X축: BW 차트와 동일한 elapsed time
+
+색상 코딩 (타일·다이어그램 overlay 공통):
+| 범위 | 색 | 시각 표시 |
+|------|---|----------|
+| < 75°C | accent (cyan) | 정상 |
+| 75 ~ 85°C | warning (amber) | 사이드바 + 카드 글로우 |
+| ≥ 85°C | danger (red) | 사이드바 + 카드 글로우 강함 |
+| 측정 실패 | muted | "—°C" 표시 |
+
+폴링: 1Hz로 항상 동작 (idle/running 무관). 측정 중에는 시계열에 누적 push, IDLE에선 카드만 갱신.
+
+데이터 소스 → `.claude/rules/measurement.md` "NIC 칩셋 온도 텔레메트리" 섹션 + SSE `event: nic_temp`
 
 ### 6.5 BandwidthChart
 

@@ -91,6 +91,13 @@ class MeasurementEvent(BaseModel):
     tool: Literal["perftest", "iperf3", "mock"]
     sub_tool: Literal["ib_write_bw", "ib_read_lat", "iperf3", "mock"] | None
 
+class NicTelemetry(BaseModel):
+    """양쪽 NIC ASIC 온도. 측정 BW와 별도 채널, 1Hz 폴링."""
+    ts: datetime
+    server_a_chip_c: float | None    # 측정 실패 시 None
+    server_b_chip_c: float | None
+    source: Literal["mget_temp", "sysfs", "mock"]
+
 # app/parser.py
 def parse_ib_write_bw_line(line: str) -> MeasurementEvent | None: ...
 def parse_ib_read_lat_line(line: str) -> MeasurementEvent | None: ...
@@ -127,13 +134,15 @@ app/
   api/
     __init__.py
     measure.py           POST /api/start, /api/stop, GET /api/status
-    stream.py            GET /api/stream (SSE)
+    stream.py            GET /api/stream (SSE — measurement + nic_temp 통합 채널)
     health.py            GET /api/health
   state.py               단일 세션 상태 + asyncio.Queue 기반 pub/sub
+  nic_telemetry.py       양쪽 서버 NIC 온도 1Hz 폴링 (mget_temp), nic_temp 이벤트 발행
 tests/
   test_api.py            httpx + ASGI
   test_sse.py
   test_state.py
+  test_nic_telemetry.py
 ```
 
 ### 인터페이스
@@ -165,10 +174,12 @@ async def stream(mgr: SessionManager = Depends()) -> StreamingResponse:
 ### 완료 기준
 
 - `/api/health` 200 OK
-- `/api/start` (tool=mock) → 5초간 SSE 이벤트 스트리밍 → `/api/stop`
+- `/api/start` (tool=mock) → 5초간 SSE `measurement` 이벤트 스트리밍 → `/api/stop`
+- `nic_temp` SSE 이벤트는 IDLE/RUNNING 무관 항상 1Hz 발행 (`source: "mock"` 모드 포함)
 - 동시 SSE 클라이언트 3개 이상 정상 동작
 - 잘못된 입력 (`tool=foo`) → 422
 - 이미 RUNNING 상태에서 `/api/start` → 409 + 현재 상태
+- NIC 온도 측정 실패(SSH timeout) 시 `server_a_chip_c=None` + 직전 값 유지
 - `pytest tests/` 전체 통과
 
 ### 위험·결정

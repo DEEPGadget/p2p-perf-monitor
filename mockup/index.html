@@ -305,6 +305,102 @@
     min-height: 0;
   }
 
+  /* ─── CHART ROW (BW + NIC TEMP 좌우 분할) ─── */
+  .chart-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 24px;
+    min-height: 0;
+  }
+
+  /* ─── NIC TEMP PANEL ─── */
+  .nic-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .nic-tiles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 12px 0 16px;
+  }
+  .nic-tile {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+  .nic-tile.warn {
+    border-left-color: var(--warning);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.15);
+  }
+  .nic-tile.danger {
+    border-left-color: var(--danger);
+    box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+  }
+  .nic-tile-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .nic-tile-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .nic-tile-value {
+    font-family: var(--font-mono);
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .nic-tile-unit {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  #nic-chart {
+    flex: 1;
+    min-height: 0;
+  }
+
+  /* ─── NIC TEMP overlay on diagram ─── */
+  .nic-temp-overlay {
+    fill: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .nic-temp-overlay.warn { fill: var(--warning); }
+  .nic-temp-overlay.danger { fill: var(--danger); }
+  .nic-temp-tag {
+    fill: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .nic-temp-divider {
+    stroke: var(--border);
+    stroke-width: 1;
+    opacity: 0.6;
+  }
+
   /* ─── CONTROL ─── */
   .control {
     display: flex;
@@ -440,9 +536,9 @@
 
   <!-- ─── HARDWARE DIAGRAM ─── -->
   <section class="hardware">
-    <svg class="hardware-svg" viewBox="0 0 1200 160" preserveAspectRatio="xMidYMid meet">
+    <svg class="hardware-svg" viewBox="0 0 1200 180" preserveAspectRatio="xMidYMid meet">
       <!-- Server A -->
-      <rect class="server-box" x="120" y="20" width="220" height="120" />
+      <rect class="server-box" x="120" y="20" width="220" height="150" />
       <text class="server-label" x="230" y="50" text-anchor="middle">SERVER A</text>
       <!-- CPU/RAM mini boxes -->
       <rect class="cpu-ram-box" x="140" y="65" width="50" height="22" />
@@ -455,9 +551,13 @@
       <rect x="155" y="100" width="150" height="30" rx="4"
             fill="var(--bg)" stroke="var(--accent)" stroke-width="1" opacity="0.6"/>
       <text class="nic-label" x="230" y="120" text-anchor="middle">CX-7 · mlx5_0</text>
+      <!-- NIC chip temp row (Server A) -->
+      <line class="nic-temp-divider" x1="155" y1="140" x2="305" y2="140"/>
+      <text class="nic-temp-tag" x="160" y="156" text-anchor="start">CHIP TEMP</text>
+      <text id="temp-a" class="nic-temp-overlay" x="300" y="156" text-anchor="end">— °C</text>
 
       <!-- Server B -->
-      <rect class="server-box" x="860" y="20" width="220" height="120" />
+      <rect class="server-box" x="860" y="20" width="220" height="150" />
       <text class="server-label" x="970" y="50" text-anchor="middle">SERVER B</text>
       <rect class="cpu-ram-box" x="880" y="65" width="50" height="22" />
       <text class="cpu-ram-text" x="905" y="79" text-anchor="middle">CPU</text>
@@ -468,6 +568,10 @@
       <rect x="895" y="100" width="150" height="30" rx="4"
             fill="var(--bg)" stroke="var(--accent)" stroke-width="1" opacity="0.6"/>
       <text class="nic-label" x="970" y="120" text-anchor="middle">CX-7 · mlx5_0</text>
+      <!-- NIC chip temp row (Server B) -->
+      <line class="nic-temp-divider" x1="895" y1="140" x2="1045" y2="140"/>
+      <text class="nic-temp-tag" x="900" y="156" text-anchor="start">CHIP TEMP</text>
+      <text id="temp-b" class="nic-temp-overlay" x="1040" y="156" text-anchor="end">— °C</text>
 
       <!-- Connection lines (bidir = two lines, uni = one) -->
       <line class="link-line" x1="340" y1="115" x2="860" y2="115" id="link-up" />
@@ -515,16 +619,45 @@
     </div>
   </section>
 
-  <!-- ─── MAIN CHART ─── -->
-  <section class="chart-wrap">
-    <div class="chart-header">
-      <div class="chart-title">BANDWIDTH (Gb/s) — LAST 60s</div>
-      <div class="chart-live" id="chart-live" style="opacity: 0;">
-        <span class="dot"></span>
-        <span>LIVE</span>
+  <!-- ─── MAIN CHARTS (BW + NIC TEMP) ─── -->
+  <section class="chart-row">
+    <section class="chart-wrap">
+      <div class="chart-header">
+        <div class="chart-title">BANDWIDTH (Gb/s) — LAST 60s</div>
+        <div class="chart-live" id="chart-live" style="opacity: 0;">
+          <span class="dot"></span>
+          <span>LIVE</span>
+        </div>
       </div>
-    </div>
-    <div id="chart"></div>
+      <div id="chart"></div>
+    </section>
+
+    <section class="nic-panel">
+      <div class="chart-header">
+        <div class="chart-title">NIC CHIP TEMPERATURE</div>
+        <div class="chart-live" id="nic-live" style="opacity: 0;">
+          <span class="dot"></span>
+          <span>LIVE</span>
+        </div>
+      </div>
+      <div class="nic-tiles">
+        <div class="nic-tile" id="nic-tile-a">
+          <div class="nic-tile-label">SERVER A</div>
+          <div class="nic-tile-value-row">
+            <span class="nic-tile-value" id="nic-a-value">—</span>
+            <span class="nic-tile-unit">°C</span>
+          </div>
+        </div>
+        <div class="nic-tile" id="nic-tile-b">
+          <div class="nic-tile-label">SERVER B</div>
+          <div class="nic-tile-value-row">
+            <span class="nic-tile-value" id="nic-b-value">—</span>
+            <span class="nic-tile-unit">°C</span>
+          </div>
+        </div>
+      </div>
+      <div id="nic-chart"></div>
+    </section>
   </section>
 
   <!-- ─── CONTROL ─── -->
@@ -694,6 +827,110 @@ function pushData(bw) {
     series: [{ data: state.data.map(d => d.value) }],
   }, { lazyUpdate: true });
 }
+
+/* ───────────── NIC TEMP chart + state ───────────── */
+const nicChartDom = document.getElementById('nic-chart');
+const nicChart = echarts.init(nicChartDom, null, { renderer: 'canvas' });
+
+const nicData = { a: [], b: [], labels: [] };
+const nicTemp = { a: 45.0, b: 47.0 };  // baseline at idle
+
+nicChart.setOption({
+  animation: false,
+  grid: { left: 36, right: 12, top: 28, bottom: 24 },
+  xAxis: {
+    type: 'category',
+    data: [],
+    boundaryGap: false,
+    axisLabel: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 9 },
+    axisLine: { lineStyle: { color: '#262626' } },
+    axisTick: { show: false },
+  },
+  yAxis: {
+    type: 'value', min: 30, max: 90, interval: 15,
+    axisLabel: {
+      color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 9,
+      formatter: '{value}°',
+    },
+    axisLine: { show: false }, axisTick: { show: false },
+    splitLine: { lineStyle: { color: '#1c1c1c' } },
+  },
+  legend: {
+    data: ['Server A', 'Server B'],
+    textStyle: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 },
+    top: 0, right: 4, itemWidth: 14, itemHeight: 2, itemGap: 12,
+  },
+  tooltip: {
+    trigger: 'axis',
+    backgroundColor: '#141414',
+    borderColor: '#262626',
+    textStyle: { color: '#fff', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
+  },
+  series: [
+    {
+      name: 'Server A', type: 'line', data: [], smooth: true, symbol: 'none',
+      lineStyle: { color: '#00d9ff', width: 2 },
+    },
+    {
+      name: 'Server B', type: 'line', data: [], smooth: true, symbol: 'none',
+      lineStyle: { color: '#f59e0b', width: 2 },
+    },
+  ],
+});
+window.addEventListener('resize', () => nicChart.resize());
+
+function generateNicTemp() {
+  const loadFactor = state.running ? (state.config.bidir ? 1.15 : 1.0) : 0;
+  const targetA = 45 + 25 * loadFactor + Math.sin(Date.now() / 12000) * 1.5;
+  const targetB = 47 + 25 * loadFactor + Math.sin(Date.now() / 12000 + 1) * 1.5;
+  const tau = 0.04;
+  nicTemp.a += (targetA - nicTemp.a) * tau + (Math.random() - 0.5) * 0.4;
+  nicTemp.b += (targetB - nicTemp.b) * tau + (Math.random() - 0.5) * 0.4;
+  nicTemp.a = Math.max(30, Math.min(95, nicTemp.a));
+  nicTemp.b = Math.max(30, Math.min(95, nicTemp.b));
+  return { a: nicTemp.a, b: nicTemp.b };
+}
+
+function pushNicData(temp, label) {
+  nicData.a.push(+temp.a.toFixed(1));
+  nicData.b.push(+temp.b.toFixed(1));
+  nicData.labels.push(label);
+  if (nicData.a.length > 600) {
+    nicData.a.shift(); nicData.b.shift(); nicData.labels.shift();
+  }
+  nicChart.setOption({
+    xAxis: { data: nicData.labels },
+    series: [{ data: nicData.a }, { data: nicData.b }],
+  }, { lazyUpdate: true });
+}
+
+function applyNicSeverity(tileId, overlayId, t) {
+  const tile = document.getElementById(tileId);
+  const overlay = document.getElementById(overlayId);
+  tile.classList.remove('warn', 'danger');
+  overlay.classList.remove('warn', 'danger');
+  if (t >= 85) { tile.classList.add('danger'); overlay.classList.add('danger'); }
+  else if (t >= 75) { tile.classList.add('warn'); overlay.classList.add('warn'); }
+}
+
+function updateNicVisuals(temp) {
+  document.getElementById('nic-a-value').textContent = temp.a.toFixed(1);
+  document.getElementById('nic-b-value').textContent = temp.b.toFixed(1);
+  document.getElementById('temp-a').textContent = `${temp.a.toFixed(1)}°C`;
+  document.getElementById('temp-b').textContent = `${temp.b.toFixed(1)}°C`;
+  applyNicSeverity('nic-tile-a', 'temp-a', temp.a);
+  applyNicSeverity('nic-tile-b', 'temp-b', temp.b);
+}
+
+// 항상 동작: 5Hz 로 NIC 온도 업데이트, 측정 중에만 chart push
+setInterval(() => {
+  const temp = generateNicTemp();
+  updateNicVisuals(temp);
+  if (state.running) {
+    const elapsed = (Date.now() - state.startTime) / 1000;
+    pushNicData(temp, `${elapsed.toFixed(0)}s`);
+  }
+}, 200);
 
 /* ───────────── KPI updaters with GSAP counters ───────────── */
 const kpiNow = document.getElementById('kpi-now');
@@ -868,6 +1105,8 @@ function startMeasurement() {
   if (state.running) return;
   state.running = true;
   state.data = [];
+  nicData.a = []; nicData.b = []; nicData.labels = [];
+  nicChart.setOption({ xAxis: { data: [] }, series: [{ data: [] }, { data: [] }] });
   state.startTime = Date.now();
   kpiState = { now: 0, avg: 0, peak: 0, lat: null };
 
@@ -883,6 +1122,7 @@ function startMeasurement() {
     setBadge('running');
     startPacketFlow();
     gsap.to(chartLive, { opacity: 1, duration: 0.4 });
+    gsap.to('#nic-live', { opacity: 1, duration: 0.4 });
 
     state.intervalId = setInterval(() => {
       const elapsed = (Date.now() - state.startTime) / 1000;
@@ -910,6 +1150,7 @@ function stopMeasurement() {
   btnIcon.textContent = '▶';
   btnText.textContent = 'START';
   gsap.to(chartLive, { opacity: 0, duration: 0.3 });
+  gsap.to('#nic-live', { opacity: 0, duration: 0.3 });
 
   document.querySelectorAll('.control-group').forEach(g => g.classList.remove('disabled'));
 }
@@ -967,7 +1208,7 @@ const tl = gsap.timeline();
 tl.from('header', { y: -20, opacity: 0, duration: 0.4, ease: 'power2.out' })
   .from('.hardware', { y: 30, opacity: 0, duration: 0.5, ease: 'power3.out' }, '-=0.2')
   .from('.kpi .card', { y: 30, opacity: 0, duration: 0.4, stagger: 0.08, ease: 'power3.out' }, '-=0.3')
-  .from('.chart-wrap', { y: 30, opacity: 0, duration: 0.5, ease: 'power3.out' }, '-=0.3')
+  .from('.chart-row > section', { y: 30, opacity: 0, duration: 0.5, stagger: 0.1, ease: 'power3.out' }, '-=0.3')
   .from('.control', { y: 20, opacity: 0, duration: 0.4, ease: 'power2.out' }, '-=0.3')
   .from('footer', { y: 20, opacity: 0, duration: 0.3, ease: 'power2.out' }, '-=0.3');
 

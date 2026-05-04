@@ -177,6 +177,78 @@ class MeasurementEvent(BaseModel):
 
 임의 shell 인자 주입 금지 → `.claude/rules/security.md`
 
+## NIC 칩셋 온도 텔레메트리
+
+측정 BW와 별도 채널로 양쪽 NIC ASIC 온도를 항상 폴링·발행. 측정 중일 때는 누적 시계열로, IDLE에서도 baseline 모니터링 표시.
+
+### 측정 명령
+
+ConnectX-7 (mlx5 드라이버 + MLNX_OFED):
+
+```bash
+# mst 디바이스 확인 (서비스 1회 시작 필요)
+sudo mst start
+sudo mst status -v
+# → /dev/mst/mt4129_pciconf0 (ConnectX-7 = MT4129)
+
+# ASIC 온도 (°C, 정수)
+sudo mget_temp -d /dev/mst/mt4129_pciconf0
+# 출력: 62
+```
+
+대안 (sysfs, 드라이버 노출 시):
+```bash
+cat /sys/class/hwmon/hwmonN/name        # mlx5_core 확인
+cat /sys/class/hwmon/hwmonN/temp1_input # millidegree → /1000
+```
+
+### 폴링 정책
+
+- 주기: **1Hz** (BW 10Hz와 별도 — NIC 온도는 천천히 변함)
+- 양쪽 서버 동시 polling (asyncssh로 두 task)
+- 실패 시: 직전 값 유지 + `error` 필드로 표시. UI는 "—°C"로 표시
+- IDLE 상태에서도 항상 동작. 시스템 health 시각화
+
+### NicTelemetry 스키마
+
+```python
+class NicTelemetry(BaseModel):
+    ts: datetime
+    server_a_chip_c: float | None   # measurement 실패 시 None
+    server_b_chip_c: float | None
+    source: Literal["mget_temp", "sysfs", "mock"]
+```
+
+### SSE 이벤트
+
+```
+event: nic_temp
+data: {"ts": "2026-05-04T12:00:00Z", "server_a_chip_c": 62.3, "server_b_chip_c": 64.1, "source": "mget_temp"}
+```
+
+`measurement` 이벤트와 분리. 측정 중·IDLE 모두 발행.
+
+### 임계값 / 색상 코딩
+
+UI 카드·다이어그램 overlay에 적용:
+
+| 범위 | 의미 | 표시 |
+|------|------|------|
+| < 75°C | 정상 | `accent` (cyan) |
+| 75 ~ 85°C | 경고 | `warning` (amber) |
+| ≥ 85°C | 위험 | `danger` (red) |
+| 측정 실패 | unknown | "—°C" muted |
+
+ConnectX-7 운영 한계는 통상 100°C 근처. 75°C부터 warning, 85°C danger는 보수적 임계.
+
+### 데모 모드 (mock)
+
+`MEASUREMENT_TOOL=mock` 또는 NIC 환경 부재 시:
+- baseline: A 45°C, B 47°C (살짝 차이로 두 라인 시각적 분리)
+- 측정 중(running): target 70°C (UNI) / 73°C (BIDIR), 1차 시간상수 τ=0.04로 점진 상승
+- noise: σ ≈ 0.4°C
+- 12초 주기 미세 진동 + 가우시안 노이즈
+
 ## 데모 모드 (`mock`)
 
 `MEASUREMENT_TOOL=mock` 또는 `/api/start` body `tool="mock"`.
