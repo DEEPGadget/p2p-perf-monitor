@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,8 +23,14 @@ class Settings(BaseSettings):
     server_a_host: str
     server_b_host: str
     ssh_user: str = "deepgadget"
-    ssh_key_path: Path = Path("/etc/p2p-monitor/id_ed25519")
-    ssh_known_hosts: Path = Path("/etc/p2p-monitor/known_hosts")
+    ssh_key_path: Path = Path("~/.ssh/p2p_monitor_ed25519")
+    ssh_known_hosts: Path = Path("~/.ssh/known_hosts_p2p")
+
+    @field_validator("ssh_key_path", "ssh_known_hosts", mode="after")
+    @classmethod
+    def _expand_user(cls, v: Path) -> Path:
+        # ~ → 절대경로 확장 (asyncssh 가 ~ 직접 인식 못 함)
+        return v.expanduser()
 
     # ─── RDMA 망 (perftest 인자) ───
     server_a_rdma_ip: str

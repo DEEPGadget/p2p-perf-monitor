@@ -203,8 +203,8 @@ main 직접 push 금지. 브랜치 명명: `feature/`, `fix/`, `chore/`
 | `SERVER_A_RDMA_IP` | 서버 A RDMA IP (perftest 인자) | `25.47.1.10` |
 | `SERVER_B_RDMA_IP` | 서버 B RDMA IP (perftest 인자) | `25.47.1.11` |
 | `SSH_USER` | SSH 계정 | `deepgadget` |
-| `SSH_KEY_PATH` | SSH private key 절대 경로 | `/etc/p2p-monitor/id_ed25519` |
-| `SSH_KNOWN_HOSTS` | known_hosts 절대 경로 | `/etc/p2p-monitor/known_hosts` |
+| `SSH_KEY_PATH` | SSH private key 경로 (`~` 자동 확장) | `~/.ssh/p2p_monitor_ed25519` |
+| `SSH_KNOWN_HOSTS` | known_hosts 경로 (`~` 자동 확장) | `~/.ssh/known_hosts_p2p` |
 | `NIC_DEVICE_A` | Server A NIC 디바이스 (RoCE 전환 후 확정) | `mlx5_0` |
 | `NIC_DEVICE_B` | Server B NIC 디바이스 (A와 동일) | `mlx5_0` |
 | `RDMA_GID_INDEX` | RoCE v2 GID index | `3` |
