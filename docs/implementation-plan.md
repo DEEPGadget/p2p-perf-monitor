@@ -269,48 +269,85 @@ frontend/
 - adapter-static + 동적 라우트 없음 → fallback `index.html` 충분
 - **Tailwind CSS v4 + SvelteKit 호환성** — v4는 PostCSS 통합 방식이 v3와 다름. `pnpm create svelte`가 생성하는 기본 `package.json`의 의존성과 충돌 여부를 스캐폴드 직후 검증 필요. 충돌 시 v3로 다운그레이드 검토 (vite-plugin-svelte v4와 안정 조합 우선)
 
-## 7. Phase 4 — 통합 + 운영
+## 7. Phase 4 — 통합 + 운영 (Docker Compose 패키징)
 
 ### 목표
 
-부스 시연을 위한 운영 자동화.
+부스 시연을 위한 운영 자동화. **Docker Compose** 채택 (의존성 격리 + inspection-system과 동일 패턴 + 재시작 단순).
+
+### 패키징 아키텍처
+
+```
+controller-host (dg5W 또는 dg5R 한 쪽 겸함)
+  │
+  ├─ docker (이미 설치 가정)
+  ├─ /etc/p2p-monitor/        SSH 키, known_hosts, .env  (호스트 측)
+  ├─ /var/log/p2p-monitor/    컨테이너 로그
+  └─ systemd: p2p-monitor.service → docker compose up 호출
+
+Container: p2p-monitor (single)
+  ├─ Python 3.12 slim + uv (multi-stage 빌드)
+  ├─ Frontend SvelteKit 빌드 결과 정적 서빙 (8080)
+  ├─ asyncssh — host의 측정 도구는 SSH로 호출 (컨테이너에 OFED 불필요)
+  └─ volumes:
+       /etc/p2p-monitor (ro)
+       /var/log/p2p-monitor (rw)
+```
 
 ### 산출물
 
 ```
+Dockerfile                     multi-stage:
+                                 stage 1) node + pnpm — frontend build
+                                 stage 2) python:3.12-slim + uv sync + frontend/build 복사
+docker-compose.yml             단일 서비스, restart: unless-stopped, 8080:8080,
+                               volumes (/etc, /var/log), env_file: .env
 systemd/
-  p2p-monitor.service
-Makefile
-README.md (시연 절차)
-.env.example
-.github/workflows/ci.yml
+  p2p-monitor.service          ExecStart: docker compose -f /opt/p2p-monitor/docker-compose.yml up
+                               ExecStop: docker compose down
+                               Restart: always
+Makefile                       install / run / demo / build / logs / restart / down
 scripts/
-  install.sh           OFED 설치 검증, perftest 동작 확인, systemd 등록
-  health-check.sh      부팅 후 /api/health 확인
+  install.sh                   1회 setup:
+                                 1. /etc/p2p-monitor/ 디렉터리 생성, 권한 700
+                                 2. SSH 키 생성 (ssh-keygen -t ed25519)
+                                 3. ssh-copy-id (PW로 1회 → dg5W, dg5R)
+                                 4. ssh-keyscan known_hosts 등록
+                                 5. .env 인터랙티브 입력 (또는 기존 .env 사용)
+                                 6. docker compose pull/build
+                                 7. systemctl enable --now p2p-monitor
+                                 8. health-check.sh 호출
+  health-check.sh              부팅 후 /api/health 30초 polling, exit 0/1
+  uninstall.sh
+README.md                      설치·시연·트러블슈팅 절차
+.github/workflows/ci.yml       (Phase 2 시 추가됨, Phase 4에서 Docker build 단계 추가)
 ```
 
 ### 작업 순서
 
-1. systemd unit 작성 (User=p2p-monitor, ExecStart=uvicorn, Restart=always)
-2. Makefile 작성 (`install`, `run`, `demo`, `test`, `lint`, `build`)
-3. CI 워크플로우 (Python lint+test, Frontend test+build)
-4. README 운영 절차:
-   - 사전 조건 (OFED, NIC, SSH 키)
-   - 설치 (`make install`)
-   - 데모 모드 (`make demo`)
-   - 실 측정 (`/api/start` POST 또는 UI 버튼)
-   - 트러블슈팅
-5. 1080p 디스플레이 1회 리허설:
-   - 자동 부팅 → 서비스 자동 시작 → 화면에 IDLE 표시
-   - 키보드 SPACE → START → 측정 → STOP
-   - 30분 무인 가동 안정성 확인
+1. **Dockerfile + docker-compose.yml** — multi-stage 빌드, 로컬에서 `docker compose build` 검증
+2. **install.sh / health-check.sh** — fresh VM 또는 컨테이너에서 시뮬레이션 검증
+3. **systemd unit** — docker compose wrapper. User는 root (docker 권한)
+4. **Makefile** — 운영 명령 단축
+5. **README 운영 절차**:
+   - 사전 조건: docker 설치, controller 호스트 (dg5W 또는 dg5R 한 쪽), 양쪽 서버 RoCE 동작, SSH 패스워드 1회 가용
+   - 설치: `sudo bash scripts/install.sh`
+   - 데모: `make demo` (MEASUREMENT_TOOL=mock 으로 컨테이너 띄움)
+   - 시연 절차 (부팅 자동시작 → IDLE 표시 → SPACE/UI → START → STOP)
+   - 트러블슈팅: SSH 키 / 컨테이너 로그 / health-check 실패
+6. **CI Docker 빌드 단계 추가**: PR마다 `docker compose build` 성공 검증
+7. **1080p 디스플레이 리허설**:
+   - 자동 부팅 → systemd 자동 시작 → 화면 IDLE
+   - 키보드/마우스 컨트롤 검증
+   - **30분 무인 가동** 안정성 확인 (메모리 / SSE 누수 / SSH 연결 안정)
 
 ### 완료 기준
 
-- systemd reboot 후 자동 시작
-- CI 모든 PR에서 통과
+- `docker compose up` 시 정상 기동 (컨테이너 healthy, 8080 응답)
+- systemd reboot 후 docker compose 자동 시작
+- CI 모든 PR에서 `docker compose build` 통과
 - README 절차대로 fresh 머신에서 동작 재현 가능
-- 1080p 부스 환경 30분 무인 가동 안정
+- 1080p 부스 환경 30분 무인 가동 안정 (메모리·SSE·SSH 누수 없음)
 
 ## 8. Phase 5 — 옵션 기능 (시간 여유 시)
 
