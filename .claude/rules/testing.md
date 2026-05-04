@@ -118,7 +118,7 @@ pnpm test:e2e            # playwright
 - 실 NIC 환경에서만:
   - `pytest -m live tests/test_integration_*.py`
 - 절차:
-  1. 두 서버 SSH 가능, ConnectX-7 동작 확인
+  1. 두 서버 SSH 가능, ConnectX-6 동작 확인
   2. `MEASUREMENT_TOOL=perftest uv run uvicorn app.main:app --port 8080`
   3. `/api/start` POST → SSE 구독 → 60초 측정 → `/api/stop`
   4. 마지막 이벤트 `bw_avg_gbps > 150` 검증 (200G NIC peak 90% 이상)

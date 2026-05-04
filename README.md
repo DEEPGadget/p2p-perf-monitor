@@ -4,7 +4,7 @@ ManyCore DeepGadget 서버 2대(`dg5W-H200NVL-4` / `dg5R-PRO6000SE-10`) 간 200G
 
 ## 목적
 
-- 두 서버에 각각 Mellanox ConnectX-7 200G NIC 장착, RoCE v2 P2P 링크
+- 두 서버에 각각 Mellanox ConnectX-6 200G NIC 장착, RoCE v2 P2P 링크
 - `perftest`(RDMA) + `iperf3`(TCP) 실시간 대역폭·지연 측정
 - NIC IC + 광 트랜시버 모듈 온도 4채널 텔레메트리 (액냉)
 - 웹 브라우저에서 실시간 시각화 (1080p 부스 디스플레이, 흑백 + cyan 톤)

@@ -18,7 +18,7 @@
   - `.claude/rules/{code-style, api, measurement, frontend, security, testing}.md` 6종
   - `docs/implementation-plan.md` (Phase 0~5 + 모듈 인터페이스)
   - `docs/ui-ux-spec.md` (디자인 시스템 + 와이어프레임 + 모션 timeline)
-  - `context/nic-environment.md` (ConnectX-7 200G RoCE + dg5W/dg5R 호스트 + QSFP56 트랜시버)
+  - `context/nic-environment.md` (ConnectX-6 200G RoCE + dg5W/dg5R 호스트 + QSFP56 트랜시버)
   - **GUI 목업** (`mockup/index.html` 단일 HTML, ManyCore 로고 적용, 사용자 승인 완료)
 - 코드(app/, frontend/) 미작성
 
@@ -33,7 +33,7 @@
 | 3 | 프론트 스택 | SvelteKit + Vite + Tailwind v4 + ECharts + GSAP + Lucide |
 | 4 | 실시간 푸시 | SSE 단방향 (컨트롤은 일반 POST). 4 이벤트: `measurement` / `nic_temp` / `status` / `error` |
 | 5 | 토폴로지 | 단일 controller (한 서버 겸함) + asyncssh로 양쪽 측정 트리거 |
-| 6 | NIC | Mellanox **ConnectX-7 200G**, RoCE v2, MLNX_OFED 사전 설치 |
+| 6 | NIC | Mellanox **ConnectX-6 200G**, RoCE v2, MLNX_OFED 사전 설치 |
 | 7 | UI 톤 | 흑백 + cyan(#00d9ff) 강조, KPI 72px 폰트, 모션은 GSAP 풀가속 |
 | 8 | 양방향 모드 | UNI / BIDIR 토글 (perftest `-b`, iperf3 `--bidir`). 차트 Y축 200/400 동적 |
 | 9 | NIC 텔레메트리 | 4채널 (IC × 2 서버 + Module × 2 서버), 1Hz 폴링, mget_temp + ethtool -m |
@@ -47,13 +47,18 @@
 | 17 | SSE 큐 정책 | 구독자별 `asyncio.Queue(maxsize=256)` + drop-oldest, 30분 idle timeout |
 | 18 | 명명 규약 | `SessionStatus` (외부 응답 DTO) vs `SessionState` (내부 머신 상태값) 구분 |
 | 19 | 정본 파일 매핑 | CLAUDE.md 상단 표에 카테고리별 단일 정본 명시 (drift 방지) |
-| 20 | NIC 포트 구성 | 2-port ConnectX-7. **1-port만 사용** (PCIe Gen5 x16 단방향 ~256G 한도, 1-port + BIDIR이 시연 임팩트 최대). 양쪽 서버 동일 포트 |
+| 20 | NIC 포트 구성 | 2-port ConnectX-6. **1-port만 사용** (PCIe Gen5 x16 단방향 ~256G 한도, 1-port + BIDIR이 시연 임팩트 최대). 양쪽 서버 동일 포트 |
 | 21 | UI 다이어그램 표기 | 단일 NIC 박스 (미사용 포트 표시 안 함, 가독성 우선) |
 | 22 | 패키징 | **Docker Compose** 채택 (multi-stage Dockerfile, single 컨테이너, systemd wrapper) |
 | 23 | 네트워크 분리 | 관리망(SSH, 192.168.1.x) + RDMA 망(perftest 인자, 25.47.1.x) 별도. ENV `SERVER_{A,B}_HOST` (SSH IP) + `SERVER_{A,B}_RDMA_IP` (RDMA IP) |
 | 24 | 호스트 IP | dg5W: SSH `192.168.1.166` / RDMA `25.47.1.10` / netdev `enp2s0f0np0`. dg5R: SSH `192.168.1.204` / RDMA `25.47.1.11` / netdev `ens7f0np0` |
 | 25 | SSH 초기 setup | install.sh 가 PW(deepgadget)로 ssh-copy-id 1회 → 키 인증 전환. .env 에는 PW 저장 X |
 | 26 | IB → RoCE 전환 완료 | 양쪽 서버 link layer Ethernet, RoCE v2 활성. 인터페이스명 `ib*` → `enp*`/`ens*` |
+| 27 | **NIC 실제 모델 ConnectX-6** | 라이브 검증으로 ConnectX-7 가정 정정. PCI 15B3:101B (MT28908). 200G HDR, RoCE v2 |
+| 28 | RDMA device 명명 비대칭 | dg5W=`mlx5_0` (전통), dg5R=`rocep100s0f0` (udev `roce p<bus_dec>s<slot>f<func>`). driver 양쪽 mlx5_core 동일 |
+| 29 | MTU 정책 | **9000 (Jumbo) 권장**. 라이브 첫 측정 시 1024로 ~181 Gb/s. 9000 적용 후 195+ 예상 |
+| 30 | 측정 흐름 재설계 | perftest stdout 이 종료 시 1줄만 출력 → 실시간 시각화 불가. **부하(perftest) + 측정(sysfs `tx_bytes`/`rx_bytes` 5Hz 폴링) 분리** |
+| 31 | 라이브 검증 1차 | 2026-05-05: SSH 양쪽 OK, ib_write_bw 5초 측정 BW 평균 **181.32 Gb/s** (MTU 1024) |
 
 상세 → 각 문서 참조.
 
@@ -63,8 +68,7 @@
 
 | 항목 | 영향 | 결정 시점 |
 |------|------|----------|
-| netdev `enp2s0f0np0`/`ens7f0np0` ↔ `mlx5_X` 매핑 검증 | `.env` `NIC_DEVICE_{A,B}` 정정 | 라이브 첫 검증 시 (`ls /sys/class/net/<iface>/device/infiniband/`) |
-| RDMA GID index 정확값 | `measurement.md` perftest `-x` 옵션 | 라이브 검증 시 `show_gids` |
+| **MTU 9000 적용 + 재측정** | 200G 라인 레이트 도달 검증 | 사용자 환경 작업 + 재측정 |
 | 케이블 종류 세부 (DAC/AOC, 길이) | 운영 문서 | Phase 4 |
 | MLNX_OFED 정확 버전 | 의존성 명시 | 설치 시 |
 | 부스 디스플레이 해상도 (1080p / 4K) | 반응형 정책 | Phase 4 |

@@ -623,7 +623,7 @@
 
       <!-- NIC indicator -->
       <rect class="nic-box" x="90" y="160" width="480" height="44"/>
-      <text class="nic-label" x="330" y="188" text-anchor="middle">ConnectX-7 · mlx5_0</text>
+      <text class="nic-label" x="330" y="188" text-anchor="middle">ConnectX-6 · mlx5_0</text>
 
       <!-- NIC IC TEMP row -->
       <line class="nic-temp-divider" x1="90" y1="220" x2="570" y2="220"/>
@@ -645,7 +645,7 @@
       <text class="cpu-ram-text" x="1625" y="126" text-anchor="middle">PCIe5 x16</text>
 
       <rect class="nic-box" x="1250" y="160" width="480" height="44"/>
-      <text class="nic-label" x="1490" y="188" text-anchor="middle">ConnectX-7 · mlx5_0</text>
+      <text class="nic-label" x="1490" y="188" text-anchor="middle">ConnectX-6 · rocep100s0f0</text>
 
       <line class="nic-temp-divider" x1="1250" y1="220" x2="1730" y2="220"/>
       <text class="nic-temp-tag" x="1260" y="244" text-anchor="start">IC TEMP</text>
@@ -852,7 +852,7 @@ const state = {
 };
 
 /* ───────────── Mock generator ─────────────
-   200G ConnectX-7 RoCE: avg ~187, peak ~198, with sine wave + gaussian noise.
+   200G ConnectX-6 RoCE: avg ~187, peak ~198, with sine wave + gaussian noise.
 */
 function generateBwSample(elapsedSec, bidir) {
   const baseAvg = bidir ? 374 : 187;       // bidir = 양방향 합산 BW
