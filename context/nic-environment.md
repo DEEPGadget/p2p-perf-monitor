@@ -5,11 +5,16 @@
 | 항목 | 값 |
 |------|-----|
 | NIC 모델 | NVIDIA Mellanox **ConnectX-7** (CX-7) |
-| 포트 속도 | **200 Gb/s** (HDR / NDR200, RoCE v2) |
-| 포트 수 | 단일 포트 사용 (서버당 1개 NIC) |
+| 포트 속도 | **200 Gb/s** per port (HDR / NDR200, RoCE v2) |
+| 포트 수 | **2-port NIC** — 서버당 1장. **P2P 데모는 1-port만 사용** |
+| 사용 포트 | 양쪽 서버 모두 **동일 포트** (`mlx5_0` 또는 `mlx5_1`, 사용자 제공 시 확정) |
 | 폼팩터 | PCIe Gen5 x16 |
-| 케이블 | DAC / AOC (200G QSFP56 또는 OSFP, 결정 후 추가 기재) |
-| 토폴로지 | 직결 또는 단일 스위치 경유 (결정 후 기재) |
+| 케이블 | DAC / AOC (200G QSFP56) — 결정 후 추가 기재 |
+| 토폴로지 | 직결 가정 (단순 P2P) |
+
+### 2-port NIC인데 1-port만 쓰는 이유
+
+PCIe Gen5 x16 단방향 실효 BW ≈ 256 Gb/s. 두 포트 동시 200G 단방향(합산 400G)은 PCIe 병목으로 ~200~240 Gb/s에서 막힘. 1-port + BIDIR(`-b`)이 합산 ~380 Gb/s로 시각 임팩트가 더 큼. 미사용 포트는 UI 다이어그램에 표시하지 않음 (가독성 우선).
 
 ## 호스트 환경
 
@@ -47,10 +52,14 @@
 
 ## NIC 디바이스 명명
 
-ConnectX-7 단일 포트 단일 NIC 환경 기준:
-- 디바이스: `mlx5_0` (또는 `mlx5_1`)
-- 인터페이스: `enp<...>s<...>` (udev 따름)
-- 두 서버 모두 동일 명명 권장 (`NIC_DEVICE_A`, `NIC_DEVICE_B`)
+2-port ConnectX-7 환경 기준:
+- 디바이스: `mlx5_0` (포트 1) / `mlx5_1` (포트 2). 2-port NIC라 두 디바이스 모두 노출
+- **사용 포트는 1개**, 양쪽 서버 동일 포트 (예: 둘 다 `mlx5_0`)
+- 인터페이스명: `enp<...>s<...>f<0|1>np<...>` (udev). 사용자 환경에서 확정 후 `.env`에 등록
+- 환경변수 설정:
+  - `NIC_DEVICE_A=mlx5_X` (사용자 제공 후 확정)
+  - `NIC_DEVICE_B=mlx5_X` (A와 동일)
+  - 트랜시버 `ethtool -m`용 netdev명은 `/sys/class/infiniband/<mlx5_X>/device/net/` 에서 자동 매핑
 
 ## 사전 검증 명령
 

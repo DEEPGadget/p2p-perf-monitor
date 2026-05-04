@@ -47,6 +47,8 @@
 | 17 | SSE 큐 정책 | 구독자별 `asyncio.Queue(maxsize=256)` + drop-oldest, 30분 idle timeout |
 | 18 | 명명 규약 | `SessionStatus` (외부 응답 DTO) vs `SessionState` (내부 머신 상태값) 구분 |
 | 19 | 정본 파일 매핑 | CLAUDE.md 상단 표에 카테고리별 단일 정본 명시 (drift 방지) |
+| 20 | NIC 포트 구성 | 2-port ConnectX-7. **1-port만 사용** (PCIe Gen5 x16 단방향 ~256G 한도, 1-port + BIDIR이 시연 임팩트 최대). 양쪽 서버 동일 포트 |
+| 21 | UI 다이어그램 표기 | 단일 NIC 박스 (미사용 포트 표시 안 함, 가독성 우선) |
 
 상세 → 각 문서 참조.
 
@@ -56,9 +58,10 @@
 
 | 항목 | 영향 | 결정 시점 |
 |------|------|----------|
+| **NIC 인터페이스 이름** (`mlx5_0` 또는 `mlx5_1`) | `.env` `NIC_DEVICE_{A,B}` | **사용자 제공 예정** |
+| **고정 IP** (Server A, Server B) | `.env` `SERVER_{A,B}_HOST` | **사용자 제공 예정** |
 | RDMA GID index 정확값 | `measurement.md` perftest `-x` 옵션 | Phase 1 시 `show_gids` 출력으로 확정 |
 | 케이블 종류 세부 (DAC/AOC, 길이) | 운영 문서 | Phase 4 |
-| 관리망 IP / RoCE 망 IP 분리 여부 | 운영 / 보안 | Phase 1 |
 | MLNX_OFED 정확 버전 | 의존성 명시 | 설치 시 |
 | 부스 디스플레이 해상도 (1080p / 4K) | 반응형 정책 | Phase 4 |
 | 폰트 파일 (Inter / JetBrains Mono) | self-hosted 자산 | Phase 3 시작 시 |
