@@ -220,11 +220,22 @@
     box-shadow: 0 0 32px rgba(0, 217, 255, 0.25);
   }
   .card-label {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.15em;
+    font-size: 13px;
+    color: var(--text-2);
+    letter-spacing: 0.18em;
     text-transform: uppercase;
-    font-weight: 600;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-label::before {
+    content: '';
+    width: 4px;
+    height: 14px;
+    background: var(--accent);
+    border-radius: 2px;
+    box-shadow: 0 0 8px var(--accent);
   }
   .card-value-row {
     display: flex;
@@ -458,9 +469,10 @@
             fill="var(--bg)" stroke="var(--accent)" stroke-width="1" opacity="0.6"/>
       <text class="nic-label" x="970" y="120" text-anchor="middle">CX-7 · mlx5_0</text>
 
-      <!-- Connection line -->
-      <line class="link-line" x1="340" y1="115" x2="860" y2="115" id="link" />
-      <text class="link-label" x="600" y="100" text-anchor="middle">200G RoCE v2 · MTU 9000</text>
+      <!-- Connection lines (bidir = two lines, uni = one) -->
+      <line class="link-line" x1="340" y1="115" x2="860" y2="115" id="link-up" />
+      <line class="link-line" x1="340" y1="125" x2="860" y2="125" id="link-down" style="visibility: hidden;" />
+      <text class="link-label" x="600" y="100" id="link-label" text-anchor="middle">200G RoCE v2 · MTU 9000</text>
 
       <!-- Packet dots (animated via JS) -->
       <g id="packets"></g>
@@ -538,6 +550,13 @@
       </div>
       <span class="control-arrow">▾</span>
     </div>
+    <div class="control-group" id="cg-bidir">
+      <div>
+        <div class="control-label">DIRECTION</div>
+        <div class="control-value" id="val-bidir">UNI</div>
+      </div>
+      <span class="control-arrow">▾</span>
+    </div>
     <div class="control-spacer"></div>
     <button class="btn-action" id="btn-action">
       <span id="btn-icon">▶</span>
@@ -577,20 +596,22 @@ const state = {
     tool: 'ib_write_bw',
     msgSize: '64K',
     duration: 60,
+    bidir: false,
   },
 };
 
 /* ───────────── Mock generator ─────────────
    200G ConnectX-7 RoCE: avg ~187, peak ~198, with sine wave + gaussian noise.
 */
-function generateBwSample(elapsedSec) {
-  const baseAvg = 187;
-  const amplitude = 8;
+function generateBwSample(elapsedSec, bidir) {
+  const baseAvg = bidir ? 374 : 187;       // bidir = 양방향 합산 BW
+  const amplitude = bidir ? 14 : 8;
+  const cap = bidir ? 396 : 199;
   const periodSec = 30;
   const sine = Math.sin((elapsedSec / periodSec) * 2 * Math.PI) * amplitude;
-  const noise = (Math.random() + Math.random() + Math.random() - 1.5) * 1.5; // approx gaussian
+  const noise = (Math.random() + Math.random() + Math.random() - 1.5) * (bidir ? 2.5 : 1.5);
   const bw = Math.max(0, baseAvg + sine + noise);
-  return Math.min(199, bw); // cap at NIC theoretical max
+  return Math.min(cap, bw);
 }
 function generateLatSample() {
   return 1.5 + Math.random() * 0.5;
@@ -714,8 +735,9 @@ function updateKpis(bw, lat) {
     kpiState.lat = lat;
   }
 
-  // Hot effect (200G ≈ 95% peak)
-  if (bw >= 195) {
+  // Hot effect (95% NIC theoretical peak — uni: 200G, bidir: 400G)
+  const peakThreshold = state.config.bidir ? 380 : 195;
+  if (bw >= peakThreshold) {
     triggerHot();
   }
 }
@@ -736,52 +758,85 @@ function triggerHot() {
 /* ───────────── Packet flow animation ───────────── */
 const packetsGroup = document.getElementById('packets');
 
-function startPacketFlow() {
-  // create 6 dots
-  for (let i = 0; i < 6; i++) {
-    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    dot.setAttribute('class', 'packet-dot');
-    dot.setAttribute('r', '4');
-    dot.setAttribute('cy', '115');
-    dot.setAttribute('cx', '340');
-    dot.setAttribute('opacity', '0');
-    packetsGroup.appendChild(dot);
+function createDot(cyValue, fromX, toX, delay) {
+  const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  dot.setAttribute('class', 'packet-dot');
+  dot.setAttribute('r', '4');
+  dot.setAttribute('cy', cyValue);
+  dot.setAttribute('cx', fromX);
+  dot.setAttribute('opacity', '0');
+  packetsGroup.appendChild(dot);
 
-    gsap.to(dot, {
-      attr: { cx: 860 },
-      opacity: 1,
-      duration: 1.5,
-      delay: i * 0.25,
-      repeat: -1,
-      ease: 'none',
-      yoyo: false,
-      onRepeat: () => { gsap.set(dot, { attr: { cx: 340 } }); },
+  gsap.to(dot, {
+    attr: { cx: toX },
+    opacity: 1,
+    duration: 1.5,
+    delay,
+    repeat: -1,
+    ease: 'none',
+    onRepeat: () => { gsap.set(dot, { attr: { cx: fromX } }); },
+  });
+  gsap.to(dot, {
+    opacity: 0,
+    duration: 0.3,
+    delay: delay + 1.2,
+    repeat: -1,
+  });
+}
+
+function startPacketFlow() {
+  if (state.config.bidir) {
+    // 두 라인 모두 활성: 위 (A→B), 아래 (B→A)
+    for (let i = 0; i < 6; i++) {
+      createDot(105, 340, 860, i * 0.25);
+      createDot(125, 860, 340, i * 0.25 + 0.125);
+    }
+    gsap.to(['#link-up', '#link-down'], {
+      attr: { 'stroke-width': 3 },
+      css: { stroke: '#00d9ff' },
+      duration: 0.4,
     });
-    gsap.to(dot, {
-      opacity: 0,
-      duration: 0.3,
-      delay: i * 0.25 + 1.2,
-      repeat: -1,
-      repeatDelay: 0.0,
+  } else {
+    // 단일 라인 (중앙)
+    for (let i = 0; i < 6; i++) {
+      createDot(115, 340, 860, i * 0.25);
+    }
+    gsap.to('#link-up', {
+      attr: { 'stroke-width': 3 },
+      css: { stroke: '#00d9ff' },
+      duration: 0.4,
     });
   }
-
-  // link line glow
-  gsap.to('#link', {
-    attr: { 'stroke-width': 3 },
-    css: { stroke: '#00d9ff' },
-    duration: 0.4,
-  });
 }
 
 function stopPacketFlow() {
   gsap.killTweensOf('.packet-dot');
   packetsGroup.innerHTML = '';
-  gsap.to('#link', {
+  gsap.to(['#link-up', '#link-down'], {
     attr: { 'stroke-width': 2 },
     css: { stroke: '#262626' },
     duration: 0.4,
   });
+}
+
+function setBidir(on) {
+  state.config.bidir = on;
+  document.getElementById('val-bidir').textContent = on ? 'BIDIR' : 'UNI';
+  const linkUp = document.getElementById('link-up');
+  const linkDown = document.getElementById('link-down');
+  const linkLabel = document.getElementById('link-label');
+  if (on) {
+    linkUp.setAttribute('y1', '105'); linkUp.setAttribute('y2', '105');
+    linkDown.setAttribute('y1', '125'); linkDown.setAttribute('y2', '125');
+    linkDown.style.visibility = '';
+    linkLabel.setAttribute('y', '85');
+  } else {
+    linkUp.setAttribute('y1', '115'); linkUp.setAttribute('y2', '115');
+    linkDown.style.visibility = 'hidden';
+    linkLabel.setAttribute('y', '100');
+  }
+  // 차트 Y축 max 동적 조정
+  chart.setOption({ yAxis: { max: on ? 400 : 200, interval: on ? 100 : 50 } });
 }
 
 /* ───────────── Status badge ───────────── */
@@ -831,7 +886,7 @@ function startMeasurement() {
 
     state.intervalId = setInterval(() => {
       const elapsed = (Date.now() - state.startTime) / 1000;
-      const bw = generateBwSample(elapsed);
+      const bw = generateBwSample(elapsed, state.config.bidir);
       const lat = generateLatSample();
       pushData(bw);
       updateKpis(bw, lat);
@@ -888,6 +943,13 @@ document.getElementById('cg-duration').addEventListener('click', () => {
   state.config.duration = durationValues[durationIdx];
   document.getElementById('val-duration').textContent = `${state.config.duration}s`;
 });
+document.getElementById('cg-bidir').addEventListener('click', () => {
+  if (state.running) return;
+  setBidir(!state.config.bidir);
+});
+
+// 초기 상태 (단방향)
+setBidir(false);
 
 /* ───────────── Clock ───────────── */
 function updateClock() {

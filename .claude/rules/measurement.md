@@ -38,6 +38,7 @@ ib_write_bw -d <NIC_DEVICE_B> -F --report_gbits \
 - `-x <gid>`: RoCE v2 GID index (기본 3)
 - `-s <bytes>`: 메시지 사이즈
 - `-q <n>`: Queue Pair 수 (병렬도). 200G는 보통 1~4면 충분
+- `-b` (선택): **bidirectional** — 양방향 동시 측정. 결과 BW는 양방향 합산값 (이상 시 ~380 Gb/s). 단방향(`-b` 없음) 시 ~190 Gb/s
 
 ### `ib_read_lat` (지연 측정)
 
@@ -55,13 +56,16 @@ ib_read_lat -d <DEV> -F -x <GID> -D <sec> <SERVER_A_HOST>
 ```
 # Server A
 iperf3 -s -p 5201 -1
-# Server B
+# Server B (단방향)
 iperf3 -c <SERVER_A_HOST> -p 5201 -t <duration_sec> -P <streams> -J
+# Server B (양방향)
+iperf3 -c <SERVER_A_HOST> -p 5201 -t <duration_sec> -P <streams> --bidir -J
 ```
 
 - `-J`: JSON 출력 강제 (파싱 단순화)
 - `-P <n>`: 병렬 스트림 (200G TCP는 다중 스트림 필수, 4~8 권장)
 - `-1`: server 1회 세션 후 종료
+- `--bidir`: bidirectional. 결과 JSON에 `intervals[].sum_sent` + `intervals[].sum_received` 합산 필요
 
 ## 프로세스 라이프사이클
 
@@ -163,6 +167,13 @@ class MeasurementEvent(BaseModel):
 | `msg_size` | int | 65536 | allowlist `[64, 1024, 8192, 65536, 262144, 1048576]` (perftest 한정) |
 | `qp_count` | int | 1 | 1..16 (perftest 한정) |
 | `iperf3_streams` | int | 8 | 1..32 (iperf3 한정) |
+| `bidir` | bool | `false` | `ib_read_lat`은 미지원(latency는 양방향 의미 없음) — runner에서 거부 |
+
+**bidir 처리**:
+- `ib_write_bw`: client 측 명령에 `-b` 추가
+- `iperf3`: client 측 명령에 `--bidir` 추가
+- `mock`: generator가 양방향 합산값 모사 (~380 Gb/s avg)
+- `ib_read_lat`: bidir=true 시 422 응답 (의미 없음)
 
 임의 shell 인자 주입 금지 → `.claude/rules/security.md`
 
@@ -171,9 +182,12 @@ class MeasurementEvent(BaseModel):
 `MEASUREMENT_TOOL=mock` 또는 `/api/start` body `tool="mock"`.
 
 `runner.py`에서 SSH 미사용. 200G NIC 동작을 모사하는 generator:
-- `bw_avg_gbps`: 사인파(주기 30s, 평균 187, 진폭 8) + 가우시안 노이즈(σ=1.5)
+- 단방향 (`bidir=false`):
+  - `bw_avg_gbps`: 사인파(주기 30s, 평균 187, 진폭 8) + 가우시안 노이즈(σ=1.5), cap 199
+- 양방향 (`bidir=true`):
+  - `bw_avg_gbps`: 사인파(주기 30s, 평균 374, 진폭 14) + 가우시안 노이즈(σ=2.5), cap 396
 - `bw_peak_gbps`: avg + uniform(0.5, 1.5)
-- `lat_us`: 1.5 ~ 2.0 사이 noise
+- `lat_us`: 1.5 ~ 2.0 사이 noise (단방향 한정)
 - 발행 주기: 10Hz
 
 UI/UX 디자인 검증 + NIC 없는 환경 시연용.

@@ -94,7 +94,7 @@
 │   │      0s    10s    20s    30s    40s    50s    60s            │       │
 │   └─────────────────────────────────────────────────────────────┘       │
 │                                                                          │
-│   ┌─[ TOOL ▾ ]──[ MSG SIZE ▾ ]──[ DURATION ▾ ]──────[ ▶ START ]─┐       │ CONTROL
+│   ┌─[ TOOL ▾ ]─[ MSG SIZE ▾ ]─[ DURATION ▾ ]─[ DIR ▾ ]──[ ▶ START ]─┐  │ CONTROL
 │   └───────────────────────────────────────────────────────────────┘     │ (h:80px)
 ├─────────────────────────────────────────────────────────────────────────┤
 │ NIC mlx5_0 · MLNX_OFED 24.10 · RoCE v2 · MTU 9000           v0.1   ©   │ FOOTER  (h:32px)
@@ -131,13 +131,18 @@ SVG 기반. 다음 요소:
 - 서버 박스 2개 (좌·우) — surface 배경, border, 내부에 CPU/RAM 작은 박스
 - 박스 라벨: "SERVER A" / "SERVER B" + 호스트명 (작게)
 - NIC 라벨: "ConnectX-7 mlx5_0" + 200G 표시
-- 두 NIC 사이 수평 라인 — 길이 50% 화면, 두께 2px, 색 border
-- **패킷 흐름**: 라인 위에 cyan dot (지름 8px, glow) 좌→우 반복 이동
+- **연결 라인 모드**:
+  - **UNI (단방향)**: 1줄 라인 (중앙 y=115). 좌→우 dot 흐름
+  - **BIDIR (양방향)**: 2줄 라인 (위 y=105, 아래 y=125). 위는 좌→우, 아래는 우→좌, dot 동시 흐름
+  - 모드 전환은 `ControlPanel`의 DIRECTION 토글 (§6.6)에 연동
+  - 라벨("200G RoCE v2 · MTU 9000") 위치도 모드에 맞게 이동 (UNI: y=100, BIDIR: y=85)
+- **패킷 흐름**: 라인 위에 cyan dot (지름 8px, glow) 반복 이동
   - GSAP timeline, 속도 = `bw_avg_gbps`에 비례
-  - dot 5~10개 동시, 위치 stagger
-  - IDLE 상태: dot 미표시 (또는 매우 천천히)
+  - 단방향: 6 dots 좌→우 stagger
+  - 양방향: 위 라인 6 dots(좌→우) + 아래 라인 6 dots(우→좌) — 아래는 0.125s offset으로 시각적 분리
+  - IDLE 상태: dot 미표시
   - RUNNING: 정상 속도
-  - 200G 근접 시: dot 글로우 강화 + 잔상 라인 추가
+  - peak 근접 시: dot 글로우 강화 + 잔상 라인 추가
 
 레이어:
 1. 정적 다이어그램 (서버 박스 + 라인 + 라벨)
@@ -151,10 +156,12 @@ SVG 기반. 다음 요소:
 각 카드:
 - 배경: surface, border, rounded-2xl
 - 패딩: 32px
-- 레이아웃: 라벨(상단 작게) + 숫자(중앙 거대) + 단위(우측 또는 하단 작게)
-- 숫자 폰트: JetBrains Mono Bold 96px, color text
-- 단위: JetBrains Mono 24px, color muted
-- 라벨: Inter 12px uppercase tracking-wider, color muted
+- 레이아웃: 라벨(상단) + 숫자(중앙 거대) + 단위(하단 작게)
+- 숫자 폰트: JetBrains Mono Bold 88~96px, color text
+- 단위: JetBrains Mono 22~24px, color muted
+- **라벨 강조**: Inter 13px **Bold**, uppercase, tracking 0.18em, color text-2 (밝게)
+  - 좌측에 4×14px accent 컬러 bar(둥근 사각형, 글로우) 부착해서 시각적 강조
+  - "라벨이 묻히는" 인상을 피하고 카드의 의미를 빠르게 인지하도록 함
 
 업데이트 모션:
 - 신규 값 도착 시 GSAP `to(value, 0.4s, "power2.out")` 카운터 트윈
@@ -176,12 +183,16 @@ ECharts line chart.
 ### 6.6 ControlPanel
 
 ```
-[ TOOL: ib_write_bw ▾ ] [ MSG SIZE: 64K ▾ ] [ DURATION: 60s ▾ ]   [ ▶ START ]
+[ TOOL: ib_write_bw ▾ ] [ MSG SIZE: 64K ▾ ] [ DURATION: 60s ▾ ] [ DIRECTION: UNI ▾ ]   [ ▶ START ]
 ```
 
 - TOOL: dropdown — `ib_write_bw` / `ib_read_lat` / `iperf3` / `mock`
 - MSG SIZE: dropdown — 64 / 1K / 8K / 64K / 256K / 1M (perftest 한정. iperf3 선택 시 회색)
 - DURATION: dropdown — 30s / 60s / 120s / 300s
+- **DIRECTION**: dropdown — `UNI` / `BIDIR`
+  - `BIDIR`: 양방향 동시 측정 (perftest `-b`, iperf3 `--bidir`). BW 합산값 표시
+  - `ib_read_lat` 선택 시 `BIDIR`은 회색 (latency 양방향 무의미)
+  - 모드 전환 시 HardwareDiagram 라인 1줄↔2줄 전환, 차트 Y축 max 200↔400 동적 조정
 - START 버튼: 큰 버튼 (right), accent 배경 → 흰 텍스트, 마우스 hover glow
   - RUNNING 상태에선 "■ STOP" (danger 배경)으로 변환
 - 모든 컨트롤 disabled 시: opacity 50%
@@ -243,10 +254,14 @@ ECharts line chart.
 5.0s: toast auto fade-out
 ```
 
-### 7.5 200G Peak 도달
+### 7.5 Peak 도달 (NIC 이론치 95%)
+
+임계값:
+- UNI: `bw_avg_gbps >= 195`
+- BIDIR: `bw_avg_gbps >= 380`
 
 ```
-bw_avg_gbps >= 195 가 5회 연속:
+임계값 5회 연속 도달 시:
   - HardwareDiagram dot stream 가속 + 잔상 라인 + glow 강화
   - KpiCards "NOW" 카드 accent border + glow pulse 1회 (0.6s)
   - 화면 외곽에 미세한 cyan vignette (0.4s on/off)

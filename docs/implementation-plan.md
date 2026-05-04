@@ -73,9 +73,10 @@ scripts/
 class StartRequest(BaseModel):
     tool: Literal["ib_write_bw", "ib_read_lat", "iperf3", "mock"] = "ib_write_bw"
     duration_sec: int = Field(60, ge=5, le=600)
-    msg_size: int = 65536  # allowlist 검증 별도
+    msg_size: int = 65536           # allowlist 검증 별도
     qp_count: int = 1
     iperf3_streams: int = 8
+    bidir: bool = False              # ib_write_bw / iperf3 한정. ib_read_lat 시 422
     model_config = ConfigDict(extra="forbid")
 
 class MeasurementEvent(BaseModel):
