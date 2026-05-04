@@ -27,7 +27,7 @@ python3 -m http.server 8000
 
 ## mock 데이터 생성식
 
-200G ConnectX-7 RoCE 환경 모사:
+200G ConnectX-6 RoCE 환경 모사:
 - BW: `187 + sin(2π · t/30) · 8 + gaussian_noise(σ=1.5)`, cap at 199
 - LAT: uniform(1.5, 2.0) µs
 

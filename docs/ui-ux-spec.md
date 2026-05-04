@@ -73,7 +73,7 @@
 │ │ dg5W-H200NVL-4       │ │ Liquid │ link  │ Liquid │ │ dg5R-PRO6000SE-10│ │ DIAGRAM
 │ │ ◇ LIQUID-COOLED      │ │ MODULE │═══════│ MODULE │ │ ◇ LIQUID-COOLED  │ │ (h:280px)
 │ │ [CPU][RAM][PCIe5x16] │ │  41°C  │       │  43°C  │ │[CPU][RAM][PCIe5] │ │
-│ │ ConnectX-7 · mlx5_0  │ └────────┘       └────────┘ │ConnectX-7·mlx5_0 │ │ packet flow
+│ │ ConnectX-6 · mlx5_0  │ └────────┘       └────────┘ │ConnectX-6·mlx5_0 │ │ packet flow
 │ │ IC TEMP        62°C  │                              │ IC TEMP    64°C  │ │ animation
 │ └──────────────────────┘                              └──────────────────┘ │
 │                                                                          │
@@ -143,7 +143,7 @@ KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 확대분 보전)
   - 좌: `dg5W-H200NVL-4`
   - 우: `dg5R-PRO6000SE-10`
 - **LIQUID-COOLED 태그** (서버 라벨 바로 아래, 11px tracking-wider, accent ◇ 아이콘): 서버 자체가 액냉 시스템임을 명시
-- **NIC indicator 박스** (각 서버 박스 안): "ConnectX-7 · mlx5_0" 라벨 (16px accent)
+- **NIC indicator 박스** (각 서버 박스 안): "ConnectX-6 · mlx5_0" 라벨 (16px accent)
 - **NIC IC TEMP row** (NIC 박스 아래): "IC TEMP" 태그 + 18px 굵은 값 + "°C" — 1Hz 갱신
 - **광 트랜시버 박스 2개** (두 서버 사이): 각 160×100px
   - "QSFP56" 라벨 + "OPTICAL · LIQUID-COOLED" 서브라벨

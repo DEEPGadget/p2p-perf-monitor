@@ -4,8 +4,8 @@
 
 | 항목 | 값 |
 |------|-----|
-| NIC 모델 | NVIDIA Mellanox **ConnectX-7** (CX-7) |
-| 포트 속도 | **200 Gb/s** per port (HDR / NDR200, RoCE v2) |
+| NIC 모델 | NVIDIA Mellanox **ConnectX-6** (MT28908, PCI ID `15B3:101B`) |
+| 포트 속도 | **200 Gb/s** per port (HDR, RoCE v2) |
 | 포트 수 | **2-port NIC** — 서버당 1장. **P2P 데모는 1-port만 사용** |
 | 사용 포트 | 양쪽 서버 모두 **동일 포트** (통상 `mlx5_0`, 라이브 검증 필요) |
 | 폼팩터 | PCIe Gen5 x16 |
@@ -46,34 +46,35 @@ PCIe Gen5 x16 단방향 실효 BW ≈ 256 Gb/s. 두 포트 동시 200G 단방향
 
 | 항목 | 값 |
 |------|-----|
-| RoCE 버전 | **v2** (UDP 캡슐화) — IB → RoCE 전환 완료 |
-| GID index | 기본 **3** (RoCE v2 IPv4). 라이브 환경에서 `show_gids` 로 확정 |
-| MTU | 기본 9000 (Jumbo) — 스위치도 동일 설정 필요 |
+| RoCE 버전 | **v2** (UDP 캡슐화). GID 3 라이브 검증 완료 |
+| GID index | **3** (RoCE v2 IPv4) — `show_gids` 로 확정 |
+| MTU | **9000 (Jumbo) 권장** — 라이브 첫 측정 시 1024 (Jumbo 미적용)로 ~181 Gb/s. 9000 적용 후 195+ 예상 |
 | PFC / ECN | RoCE 무손실 지원 시 활성. 직결이면 보통 불필요 |
 | 관리망 (SSH) | `192.168.1.0/24`. SSH IP: dg5W=`192.168.1.166`, dg5R=`192.168.1.204` |
 | RDMA 망 | `25.47.1.0/24`. RDMA IP: dg5W=`25.47.1.10`, dg5R=`25.47.1.11` |
 
 이전 IB 모드 (`ibp2s0f0`/`ibs7f0`)에서 다음 절차로 RoCE 전환 완료:
-1. ConnectX-7 link layer를 Ethernet으로 전환 (`mlxconfig -d <dev> set LINK_TYPE_P1=2`)
+1. ConnectX-6 link layer를 Ethernet으로 전환 (`mlxconfig -d <dev> set LINK_TYPE_P1=2`)
 2. RoCE v2 활성화, IP 재할당 (25.47.1.x)
 3. 인터페이스명 `ib*` → `enp*`/`ens*` 변경됨
 
 ## NIC 디바이스 명명
 
-2-port ConnectX-7 환경 기준:
+2-port ConnectX-6 환경 기준:
 - 디바이스: `mlx5_0` (포트 1) / `mlx5_1` (포트 2). 2-port NIC라 두 디바이스 모두 노출
 - **사용 포트는 1개**, 양쪽 서버 동일 포트 (통상 `mlx5_0`)
-- 인터페이스명 (RoCE 전환 후 확정):
-  | 서버 | netdev 인터페이스 | RDMA IP | mlx5 디바이스 |
-  |------|-----------------|---------|--------------|
-  | dg5W | `enp2s0f0np0` | `25.47.1.10` | `mlx5_0` (라이브 검증 필요) |
-  | dg5R | `ens7f0np0` | `25.47.1.11` | `mlx5_0` (라이브 검증 필요) |
-- 환경변수: `NIC_DEVICE_{A,B}=mlx5_0` (default). 라이브 검증 후 정정 가능
-- netdev ↔ mlx5 device 매핑 검증:
+- 인터페이스명 (라이브 검증 완료):
+  | 서버 | netdev 인터페이스 | RDMA IP | RDMA device | 비고 |
+  |------|-----------------|---------|------------|------|
+  | dg5W | `enp2s0f0np0` | `25.47.1.10` | `mlx5_0` | 전통 명명 (PCIe 02:00.0) |
+  | dg5R | `ens7f0np0` | `25.47.1.11` | `rocep100s0f0` | udev `roce p<bus_dec> s<slot> f<func>` (PCIe 64:00.0 = bus 100 dec) |
+- driver는 양쪽 모두 `mlx5_core` (perftest·ibv 동일하게 동작)
+- 환경변수: `NIC_DEVICE_A=mlx5_0`, `NIC_DEVICE_B=rocep100s0f0`
+- netdev ↔ RDMA device 매핑:
   ```bash
-  ls /sys/class/net/<iface>/device/infiniband/   # → mlx5_X
+  ls /sys/class/net/<iface>/device/infiniband/   # → mlx5_0 또는 rocep...
   ```
-- 트랜시버 `ethtool -m`용 netdev명은 `/sys/class/infiniband/<mlx5_X>/device/net/`에서 자동 추출 (또는 위 표의 인터페이스명 직접 사용)
+- 트랜시버 `ethtool -m` 직접 호출은 netdev 인터페이스명 사용 (`ethtool -m enp2s0f0np0`)
 
 ## 사전 검증 명령
 
@@ -99,15 +100,15 @@ ib_write_bw -d mlx5_0 -F --report_gbits -D 30
 ib_write_bw -d mlx5_0 -F --report_gbits -D 30 <server-A-ip>
 ```
 
-## 200G RoCE 기대 성능
+## 200G RoCE 기대·실측 성능
 
-| 측정 | 기대값 | 비고 |
-|------|--------|------|
-| `ib_write_bw` (msg=64K) | 195~199 Gb/s peak | NIC 이론 최대 근접 |
-| `ib_write_bw -b` (BIDIR) | ~380 Gb/s 합산 | UI Y축 400 max |
-| `ib_write_bw` (msg=8K) | 180~195 Gb/s peak | 메시지 사이즈 ↓ → BW ↓ |
-| `ib_read_lat` (msg=8B) | 1.5~2.0 µs avg | RDMA Read RTT |
-| `iperf3 -P 8` (TCP) | 150~180 Gb/s | RDMA 대비 GAP 가시화 |
+| 측정 | 기대값 | 실측 | 비고 |
+|------|--------|------|------|
+| `ib_write_bw` (msg=64K, MTU=1024) | — | **181.32 Gb/s** | 2026-05-05 라이브 5초 |
+| `ib_write_bw` (msg=64K, MTU=9000) | 195~199 Gb/s | TBD | Jumbo 적용 후 재측정 |
+| `ib_write_bw -b` (BIDIR, MTU=9000) | ~380 Gb/s 합산 | TBD | UI Y축 400 max |
+| `ib_read_lat` (msg=8B) | 1.5~2.0 µs avg | TBD | RDMA Read RTT |
+| `iperf3 -P 8` (TCP) | 150~180 Gb/s | TBD | RDMA 대비 GAP 가시화 |
 
 위 수치는 측정 도구 출력 파싱 검증·테스트 fixture 작성·UI Y축 max 결정의 기준.
 
