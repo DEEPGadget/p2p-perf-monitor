@@ -51,8 +51,9 @@
 | 21 | UI 다이어그램 표기 | 단일 NIC 박스 (미사용 포트 표시 안 함, 가독성 우선) |
 | 22 | 패키징 | **Docker Compose** 채택 (multi-stage Dockerfile, single 컨테이너, systemd wrapper) |
 | 23 | 네트워크 분리 | 관리망(SSH, 192.168.1.x) + RDMA 망(perftest 인자, 25.47.1.x) 별도. ENV `SERVER_{A,B}_HOST` (SSH IP) + `SERVER_{A,B}_RDMA_IP` (RDMA IP) |
-| 24 | 호스트 IP | dg5W: SSH 192.168.1.166 / RDMA 25.47.1.10. dg5R: SSH 192.168.1.94 / RDMA 25.47.1.11 |
+| 24 | 호스트 IP | dg5W: SSH `192.168.1.166` / RDMA `25.47.1.10` / netdev `enp2s0f0np0`. dg5R: SSH `192.168.1.204` / RDMA `25.47.1.11` / netdev `ens7f0np0` |
 | 25 | SSH 초기 setup | install.sh 가 PW(deepgadget)로 ssh-copy-id 1회 → 키 인증 전환. .env 에는 PW 저장 X |
+| 26 | IB → RoCE 전환 완료 | 양쪽 서버 link layer Ethernet, RoCE v2 활성. 인터페이스명 `ib*` → `enp*`/`ens*` |
 
 상세 → 각 문서 참조.
 
@@ -62,9 +63,8 @@
 
 | 항목 | 영향 | 결정 시점 |
 |------|------|----------|
-| **IB → RoCE 모드 전환** (사용자 측 별도 작업) | 측정 가능 여부 자체 | 사용자 환경 작업 후 |
-| **RoCE 전환 후 인터페이스명** (`mlx5_X`) | `.env` `NIC_DEVICE_{A,B}` | RoCE 전환 후 사용자 제공 |
-| RDMA GID index 정확값 | `measurement.md` perftest `-x` 옵션 | RoCE 전환 후 `show_gids` 로 확정 |
+| netdev `enp2s0f0np0`/`ens7f0np0` ↔ `mlx5_X` 매핑 검증 | `.env` `NIC_DEVICE_{A,B}` 정정 | 라이브 첫 검증 시 (`ls /sys/class/net/<iface>/device/infiniband/`) |
+| RDMA GID index 정확값 | `measurement.md` perftest `-x` 옵션 | 라이브 검증 시 `show_gids` |
 | 케이블 종류 세부 (DAC/AOC, 길이) | 운영 문서 | Phase 4 |
 | MLNX_OFED 정확 버전 | 의존성 명시 | 설치 시 |
 | 부스 디스플레이 해상도 (1080p / 4K) | 반응형 정책 | Phase 4 |
@@ -76,21 +76,30 @@
 
 1. ✅ **교차검증 1라운드 완료** — arch / impl / harness 3 reviewer 보고 + 피드백 반영 commit (CRITICAL 5건 + HIGH 7건 + 핵심 MEDIUM 4건)
 2. **교차검증 2라운드** — 1라운드 피드백 반영본 재검토
-3. 피드백 반영 PR #1 머지
-4. **Phase 1 시작**: 브랜치 `feature/measurement-poc`
-   - `app/schemas.py` (StartRequest, SessionStatus, MeasurementEvent, NicTelemetry — 정본 → rules/measurement.md)
-   - `app/config.py` (Settings BaseSettings)
-   - `app/parser.py` (ib_write_bw / ib_read_lat / iperf3 — uni + bidir 모두)
-   - `app/runner.py` (asyncssh + mock_session)
-   - `tests/conftest.py` + `tests/fixtures/` (BIDIR fixture 캡처 필수)
-   - `scripts/poc.py` CLI
-   - `.github/workflows/ci.yml` (Phase 2 진입 전에 추가)
+3. ✅ PR #1 머지 (Phase 0)
+4. ✅ PR #2 머지 (2-port NIC 명시)
+5. ✅ PR #3 머지 (네트워크 분리 + Docker 패키징)
+6. ✅ **Phase 1 PoC 작성 완료** (브랜치 `feature/measurement-poc`, 4 commits)
+   - `pyproject.toml` (uv + ruff + pytest)
+   - `app/{__init__,schemas,config,parser,runner}.py`
+   - `tests/{conftest,test_schemas,test_parser,test_runner}.py`
+   - `tests/fixtures/` 6종 (perftest uni/bidir/lat 합성 + iperf3 3종)
+   - `scripts/poc.py` CLI (--tool mock|ib_write_bw|ib_read_lat|iperf3)
+7. **다음**: Phase 1 PR 머지 — 사용자 환경에서 `uv sync` + `pytest tests/ -m "not live"` 검증 후 머지
+8. **(라이브 검증, 옵션)** RoCE 전환 + 인터페이스명 받은 후 실 NIC 환경에서 `pytest -m live` + `python scripts/poc.py --tool ib_write_bw --duration 30` 1회 검증, fixture 보강
+9. **Phase 2 시작**: 브랜치 `feature/api-and-sse`
+   - `app/state.py` (SessionManager + queue fan-out)
+   - `app/nic_telemetry.py` (1Hz 폴링, 별도 SSH pool)
+   - `app/api/{health,measure,stream}.py`
+   - `app/main.py` (lifespan + 라우터 등록)
+   - `.github/workflows/ci.yml` (pytest + ruff)
 
 ---
 
 ## 미처리 이슈
 
-없음 (Phase 0 진행 중, mockup 완료).
+- BIDIR perftest stdout 포맷 미검증 (현재 합산 단일 라인 가정). RoCE 전환 후 실측 fixture 캡처로 보강
+- iperf3 msg_size 필드 default 131072 (실제 -l 옵션 측정값과 일치 여부 확인 필요)
 
 ---
 

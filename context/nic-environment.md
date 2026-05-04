@@ -7,7 +7,7 @@
 | NIC 모델 | NVIDIA Mellanox **ConnectX-7** (CX-7) |
 | 포트 속도 | **200 Gb/s** per port (HDR / NDR200, RoCE v2) |
 | 포트 수 | **2-port NIC** — 서버당 1장. **P2P 데모는 1-port만 사용** |
-| 사용 포트 | 양쪽 서버 모두 **동일 포트** (`mlx5_0` 또는 `mlx5_1`, 사용자 제공 시 확정) |
+| 사용 포트 | 양쪽 서버 모두 **동일 포트** (통상 `mlx5_0`, 라이브 검증 필요) |
 | 폼팩터 | PCIe Gen5 x16 |
 | 케이블 | DAC / AOC (200G QSFP56) — 결정 후 추가 기재 |
 | 토폴로지 | 직결 가정 (단순 P2P) |
@@ -46,32 +46,34 @@ PCIe Gen5 x16 단방향 실효 BW ≈ 256 Gb/s. 두 포트 동시 200G 단방향
 
 | 항목 | 값 |
 |------|-----|
-| RoCE 버전 | **v2** (UDP 캡슐화) — *현재 환경은 IB 모드, RoCE 모드로 전환 예정* |
-| GID index | 기본 **3** (RoCE v2 IPv4). RoCE 전환 후 `show_gids` 로 확정 |
+| RoCE 버전 | **v2** (UDP 캡슐화) — IB → RoCE 전환 완료 |
+| GID index | 기본 **3** (RoCE v2 IPv4). 라이브 환경에서 `show_gids` 로 확정 |
 | MTU | 기본 9000 (Jumbo) — 스위치도 동일 설정 필요 |
 | PFC / ECN | RoCE 무손실 지원 시 활성. 직결이면 보통 불필요 |
-| 관리망 (SSH) | `192.168.1.0/24`. SSH IP: dg5W=`192.168.1.166`, dg5R=`192.168.1.94` |
+| 관리망 (SSH) | `192.168.1.0/24`. SSH IP: dg5W=`192.168.1.166`, dg5R=`192.168.1.204` |
 | RDMA 망 | `25.47.1.0/24`. RDMA IP: dg5W=`25.47.1.10`, dg5R=`25.47.1.11` |
 
-> **현재 IB 모드 → RoCE 전환 작업** (사용자 측 별도 진행):
-> 1. ConnectX-7 link layer를 Ethernet으로 전환 (`mlxconfig -d <dev> set LINK_TYPE_P1=2`)
-> 2. RoCE v2 활성화, IP 재할당 (25.47.1.x)
-> 3. 인터페이스명 변경됨 (`ib*` → `enp*`/`ens*`). 사용자 제공 후 `.env` 갱신
+이전 IB 모드 (`ibp2s0f0`/`ibs7f0`)에서 다음 절차로 RoCE 전환 완료:
+1. ConnectX-7 link layer를 Ethernet으로 전환 (`mlxconfig -d <dev> set LINK_TYPE_P1=2`)
+2. RoCE v2 활성화, IP 재할당 (25.47.1.x)
+3. 인터페이스명 `ib*` → `enp*`/`ens*` 변경됨
 
 ## NIC 디바이스 명명
 
 2-port ConnectX-7 환경 기준:
 - 디바이스: `mlx5_0` (포트 1) / `mlx5_1` (포트 2). 2-port NIC라 두 디바이스 모두 노출
-- **사용 포트는 1개**, 양쪽 서버 동일 포트
-- 인터페이스명 — 현재/예정:
-  | 서버 | 현재 (IB 모드) | RoCE 전환 후 |
-  |------|--------------|-------------|
-  | dg5W | `ibp2s0f0` | TBD (사용자 제공) |
-  | dg5R | `ibs7f0` | TBD (사용자 제공) |
-- 환경변수:
-  - `NIC_DEVICE_A=mlx5_X` — RoCE 전환 후 확정
-  - `NIC_DEVICE_B=mlx5_X` — A와 동일
-  - 트랜시버 `ethtool -m`용 netdev명은 `/sys/class/infiniband/<mlx5_X>/device/net/` 에서 자동 매핑
+- **사용 포트는 1개**, 양쪽 서버 동일 포트 (통상 `mlx5_0`)
+- 인터페이스명 (RoCE 전환 후 확정):
+  | 서버 | netdev 인터페이스 | RDMA IP | mlx5 디바이스 |
+  |------|-----------------|---------|--------------|
+  | dg5W | `enp2s0f0np0` | `25.47.1.10` | `mlx5_0` (라이브 검증 필요) |
+  | dg5R | `ens7f0np0` | `25.47.1.11` | `mlx5_0` (라이브 검증 필요) |
+- 환경변수: `NIC_DEVICE_{A,B}=mlx5_0` (default). 라이브 검증 후 정정 가능
+- netdev ↔ mlx5 device 매핑 검증:
+  ```bash
+  ls /sys/class/net/<iface>/device/infiniband/   # → mlx5_X
+  ```
+- 트랜시버 `ethtool -m`용 netdev명은 `/sys/class/infiniband/<mlx5_X>/device/net/`에서 자동 추출 (또는 위 표의 인터페이스명 직접 사용)
 
 ## 사전 검증 명령
 
