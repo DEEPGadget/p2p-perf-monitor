@@ -7,7 +7,13 @@ from pathlib import Path
 
 import pytest
 
-from app.parser import parse_ib_read_lat_line, parse_ib_write_bw_line, parse_iperf3_json
+from app.parser import (
+    make_sysfs_event,
+    parse_ib_read_lat_line,
+    parse_ib_write_bw_line,
+    parse_iperf3_json,
+    parse_sysfs_stats,
+)
 from app.schemas import MeasurementEvent
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -180,3 +186,57 @@ class TestHeaderIgnoreRegression:
         # 4 데이터 라인 외 ~25 헤더 라인 모두 None
         none_count = sum(1 for r in results if r is None)
         assert none_count >= 20
+
+
+# ─────────────────────────── sysfs stats (Phase 2 측정 흐름) ───────────────────────────
+
+
+class TestParseSysfsStats:
+    def test_normal_diff_to_gbps(self) -> None:
+        # 1초간 200Gb/s = 25,000,000,000 bytes
+        bw = parse_sysfs_stats(0, 25_000_000_000, 1.0)
+        assert bw == pytest.approx(200.0)
+
+    def test_zero_diff(self) -> None:
+        assert parse_sysfs_stats(1000, 1000, 1.0) == 0.0
+
+    def test_negative_diff_clamped_zero(self) -> None:
+        # 카운터 wraparound 또는 reset
+        assert parse_sysfs_stats(2000, 1000, 1.0) == 0.0
+
+    def test_zero_interval_returns_zero(self) -> None:
+        assert parse_sysfs_stats(0, 100, 0.0) == 0.0
+
+    def test_negative_interval_returns_zero(self) -> None:
+        assert parse_sysfs_stats(0, 100, -0.5) == 0.0
+
+    def test_5hz_polling_interval(self) -> None:
+        # 0.2초 동안 5GB → 200Gbps
+        bw = parse_sysfs_stats(0, 5_000_000_000, 0.2)
+        assert bw == pytest.approx(200.0)
+
+    def test_181gbps_realistic(self) -> None:
+        # 라이브 측정 1초간 ~22.66 GB
+        bw = parse_sysfs_stats(0, 22_665_000_000, 1.0)
+        assert 181.0 < bw < 182.0
+
+
+class TestMakeSysfsEvent:
+    def test_perftest_event(self) -> None:
+        evt = make_sysfs_event(181.5, msg_size=65536, sub_tool="ib_write_bw", ts=FIXED_TS)
+        assert evt.tool_category == "perftest"
+        assert evt.sub_tool == "ib_write_bw"
+        assert evt.bw_peak_gbps == 181.5
+        assert evt.bw_avg_gbps == 181.5
+        assert evt.lat_us is None
+        assert evt.iterations is None
+
+    def test_iperf3_event(self) -> None:
+        evt = make_sysfs_event(150.0, msg_size=131072, sub_tool="iperf3", ts=FIXED_TS)
+        assert evt.tool_category == "iperf3"
+        assert evt.sub_tool == "iperf3"
+
+    def test_mock_event(self) -> None:
+        evt = make_sysfs_event(187.0, msg_size=65536, sub_tool="mock", ts=FIXED_TS)
+        assert evt.tool_category == "mock"
+        assert evt.sub_tool == "mock"
