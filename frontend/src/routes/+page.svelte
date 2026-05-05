@@ -74,9 +74,8 @@
       <span>·</span>
       <span>MTU 9000</span>
     </div>
-    <div class="meta brand">
-      <span class="version">v0.1</span>
-      <img src="/dg_logo.png" alt="deep gadget" class="brand-logo" />
+    <div class="meta">
+      <span>v0.1</span>
     </div>
   </footer>
 </div>

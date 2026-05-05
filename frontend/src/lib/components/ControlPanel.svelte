@@ -56,6 +56,11 @@
 </script>
 
 <section class="control">
+  <button class="btn-action" class:stop={isRunning} type="button" onclick={onAction}>
+    <span>{isRunning ? '■' : '▶'}</span>
+    <span>{isRunning ? 'STOP' : 'START'}</span>
+  </button>
+
   <button class="control-group" type="button" onclick={() => (toolIdx = cycle(TOOLS, toolIdx))} disabled={isRunning}>
     <div>
       <div class="control-label">TOOL</div>
@@ -95,10 +100,7 @@
 
   <div class="control-spacer"></div>
 
-  <button class="btn-action" class:stop={isRunning} type="button" onclick={onAction}>
-    <span>{isRunning ? '■' : '▶'}</span>
-    <span>{isRunning ? 'STOP' : 'START'}</span>
-  </button>
+  <img class="brand-logo" src="/dg_logo.png" alt="deep gadget" />
 </section>
 
 <style>
@@ -179,5 +181,11 @@
   }
   .btn-action.stop:hover {
     box-shadow: 0 0 24px rgba(239, 68, 68, 0.5);
+  }
+  .brand-logo {
+    height: 36px;
+    width: auto;
+    display: block;
+    margin-right: 8px;
   }
 </style>
