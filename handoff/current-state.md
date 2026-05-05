@@ -38,7 +38,7 @@
 | 8 | 양방향 모드 | UNI / BIDIR 토글 (perftest `-b`, iperf3 `--bidir`). 차트 Y축 200/400 동적 |
 | 9 | NIC 텔레메트리 | 4채널 (IC × 2 서버 + Module × 2 서버), 1Hz 폴링, mget_temp + ethtool -m |
 | 10 | 광 트랜시버 | **QSFP56**, Liquid-Cooled |
-| 11 | 호스트 모델 | Server A = `dg5W-H200NVL-4`, Server B = `dg5R-PRO6000SE-10` |
+| 11 | 호스트 모델 | Server A = `dg5W-H200NVL-4`, Server B = `dg5R-PRO6000SE-8` |
 | 12 | 냉각 | NIC IC + 광 트랜시버 모두 Liquid-Cooled (UI에 명시 표기) |
 | 13 | 회사 로고 | ManyCore PNG (white/black 두 버전, mockup 적용 완료) |
 | 14 | SSH 정책 | controller self-SSH 포함 모든 호출을 SSH로 통일 (subprocess 분기 X). known_hosts 사전 등록 |

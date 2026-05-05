@@ -125,7 +125,7 @@
 
     <!-- Server B: dg5R -->
     <rect class="server-box" x="1220" y="20" width="540" height="240" />
-    <text class="server-label" x="1490" y="55" text-anchor="middle">dg5R-PRO6000SE-10</text>
+    <text class="server-label" x="1490" y="55" text-anchor="middle">dg5R-PRO6000SE-8</text>
     <text class="liquid-tag" x="1490" y="80" text-anchor="middle"
       ><tspan class="icon">◇</tspan>&nbsp;&nbsp;LIQUID-COOLED</text>
     <rect class="cpu-ram-box" x="1250" y="100" width="120" height="42" />
