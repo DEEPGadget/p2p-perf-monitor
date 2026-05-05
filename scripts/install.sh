@@ -135,7 +135,11 @@ build_and_enable() {
   install -m 644 "${REPO_ROOT}/systemd/p2p-monitor.service" \
     /etc/systemd/system/p2p-monitor.service
   systemctl daemon-reload
-  systemctl enable --now "${SERVICE_NAME}.service"
+  systemctl enable "${SERVICE_NAME}.service"
+  # 멱등 재실행 시 새 이미지로 컨테이너 recreate 보장 — restart 명시.
+  # (enable --now 단독은 이미 active 면 no-op → 신규 빌드 반영 안 됨)
+  log "systemctl restart (새 이미지 반영)"
+  systemctl restart "${SERVICE_NAME}.service"
 }
 
 run_health_check() {
