@@ -1,0 +1,26 @@
+# /etc/systemd/system/p2p-monitor.service
+# 정본 사양 → docs/implementation-plan.md §Phase 4
+#
+# Docker Compose foreground wrapper.
+# 설치: scripts/install.sh 가 /etc/systemd/system/ 에 복사 + enable.
+[Unit]
+Description=P2P NIC Perf Monitor (Docker Compose)
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/p2p-monitor
+# foreground 실행 — systemd 가 lifecycle 관리. -d 금지.
+ExecStartPre=/usr/bin/docker compose -f /opt/p2p-monitor/docker-compose.yml down --remove-orphans
+ExecStart=/usr/bin/docker compose -f /opt/p2p-monitor/docker-compose.yml up
+ExecStop=/usr/bin/docker compose -f /opt/p2p-monitor/docker-compose.yml down
+Restart=always
+RestartSec=10
+TimeoutStartSec=120
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
