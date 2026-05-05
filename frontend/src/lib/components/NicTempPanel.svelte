@@ -13,9 +13,10 @@
   const sevModA = $derived(severity(nicTelemetryStore.modA, 'module'));
   const sevModB = $derived(severity(nicTelemetryStore.modB, 'module'));
 
-  // 4채널 시계열 라인 — 색은 cyan 단색, IC=실선 / MOD=점선, dg5W/dg5R 두께로 구분
+  // 4채널 시계열 라인 — 채널별 색상 구분, 선 모양은 모두 실선 통일
   const SERIES_NAMES = ['IC · dg5W', 'IC · dg5R', 'MOD · dg5W', 'MOD · dg5R'];
-  const ACCENT = '#00d9ff';
+  const SERIES_COLORS = ['#00d9ff', '#a855f7', '#22c55e', '#f59e0b'];
+  // IC·dg5W=cyan / IC·dg5R=violet / MOD·dg5W=green / MOD·dg5R=amber
 
   onMount(async () => {
     const echarts = await import('echarts');
@@ -70,16 +71,15 @@
           valueFormatter: (v: number | null) =>
             v == null ? '—' : `${v.toFixed(1)}°C`,
         },
-        series: [
-          { name: 'IC · dg5W',  type: 'line', data: [], smooth: true, symbol: 'none',
-            lineStyle: { color: ACCENT, width: 2.4, type: 'solid' } },
-          { name: 'IC · dg5R',  type: 'line', data: [], smooth: true, symbol: 'none',
-            lineStyle: { color: ACCENT, width: 1.4, type: 'solid' } },
-          { name: 'MOD · dg5W', type: 'line', data: [], smooth: true, symbol: 'none',
-            lineStyle: { color: ACCENT, width: 2.4, type: 'dashed' } },
-          { name: 'MOD · dg5R', type: 'line', data: [], smooth: true, symbol: 'none',
-            lineStyle: { color: ACCENT, width: 1.4, type: 'dashed' } },
-        ],
+        series: SERIES_NAMES.map((name, i) => ({
+          name,
+          type: 'line',
+          data: [],
+          smooth: true,
+          symbol: 'none',
+          itemStyle: { color: SERIES_COLORS[i] },
+          lineStyle: { color: SERIES_COLORS[i], width: 2, type: 'solid' },
+        })),
       });
     }
     const ro = new ResizeObserver(() => chart?.resize());
