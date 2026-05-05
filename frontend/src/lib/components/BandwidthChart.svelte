@@ -9,18 +9,25 @@
   let container: HTMLDivElement | undefined = $state();
   let chart: import('echarts').ECharts | null = null;
 
-  // 데이터 max 기반 동적 yMax — 50 단위 round-up, 데이터 없을 땐 모드별 baseline.
+  // 데이터 기반 동적 yMax — 데이터 있으면 항상 peak 기준으로 zoom.
+  // 데이터 없을 때만 모드별 baseline (UNI=200, BIDIR=400) 표시.
+  const hasData = $derived(measurementStore.values.length > 0);
   const dataPeak = $derived(
-    measurementStore.values.length > 0 ? Math.max(...measurementStore.values) : 0,
+    hasData ? Math.max(...measurementStore.values) : 0,
   );
   const yMax = $derived.by(() => {
-    const baseline = bidir ? 400 : 200;
-    if (dataPeak === 0) return baseline;
-    const padded = dataPeak * 1.15; // 15% headroom
-    const rounded = Math.ceil(padded / 50) * 50;
-    return Math.max(50, rounded);
+    if (!hasData) return bidir ? 400 : 200; // 측정 시작 전 baseline
+    const padded = Math.max(1, dataPeak) * 1.15; // 15% headroom (peak 0 이라도 1 단위로)
+    if (padded <= 10) return Math.max(2, Math.ceil(padded));
+    if (padded <= 50) return Math.ceil(padded / 5) * 5;
+    return Math.ceil(padded / 50) * 50;
   });
-  const yInterval = $derived(yMax <= 200 ? 50 : 100);
+  const yInterval = $derived(
+    yMax <= 10 ? Math.max(1, Math.floor(yMax / 4))
+    : yMax <= 50 ? 10
+    : yMax <= 200 ? 50
+    : 100,
+  );
 
   function baseOption() {
     return {
