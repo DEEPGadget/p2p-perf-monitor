@@ -15,6 +15,8 @@ import random
 import shlex
 from collections.abc import AsyncIterator
 from contextlib import suppress
+
+import structlog
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
@@ -353,6 +355,8 @@ async def _run_with_sysfs(req: StartRequest, settings: Settings) -> AsyncIterato
 
 
 _LAT_SUB_DURATION = 1  # 초 단위 sub-iteration
+_LAT_SETUP_SLEEP = 0.5  # server listen 안정화 대기 (perftest QP 생성 + GID 교환)
+_LAT_ITER_TIMEOUT = 8.0  # 한 iteration 의 wallclock 상한
 
 
 async def _run_perftest_lat(
@@ -361,63 +365,100 @@ async def _run_perftest_lat(
     """`ib_read_lat` 짧은 측정 반복으로 시계열 latency yield.
 
     perftest `ib_read_lat -D <sec>` 는 종료 시 결과 1줄만 출력 → 시계열
-    임팩트 부족. duration_sec 동안 1초 단위 sub-measurement 를 반복 호출하여
-    BW 차분 폴링과 비슷한 1Hz 흐름 생성. 매 iteration 마다 server·client
-    process 재spawn (ib_read_lat server 는 client 종료 시 자동 종료).
-    SSH connection 은 한 번만 만들고 재사용.
+    임팩트 부족. duration_sec 동안 1초 sub-measurement 반복 → 1Hz 흐름.
+    매 iteration 마다 SSH connection·process 모두 새로 만들어 단순화·견고화
+    (process 누수 / stream 동시성 이슈 회피). 실패 iteration 은 skip 하고
+    다음 iteration 시도.
     """
     ssh_kw = _ssh_kwargs(settings)
     iterations = max(1, req.duration_sec // _LAT_SUB_DURATION)
+    log = structlog.get_logger("runner.lat")
 
-    server_conn = None
-    client_conn = None
-    try:
-        server_conn, client_conn = await asyncio.gather(
-            asyncssh.connect(settings.server_a_host, **ssh_kw),
-            asyncssh.connect(settings.server_b_host, **ssh_kw),
+    for i in range(iterations):
+        server_args = _build_ib_read_lat_args(
+            req, settings, peer_rdma=None, duration=_LAT_SUB_DURATION
+        )
+        client_args = _build_ib_read_lat_args(
+            req,
+            settings,
+            peer_rdma=settings.server_a_rdma_ip,
+            duration=_LAT_SUB_DURATION,
         )
 
-        for _ in range(iterations):
-            server_args = _build_ib_read_lat_args(
-                req, settings, peer_rdma=None, duration=_LAT_SUB_DURATION
-            )
-            client_args = _build_ib_read_lat_args(
-                req, settings, peer_rdma=settings.server_a_rdma_ip,
-                duration=_LAT_SUB_DURATION,
-            )
+        evt = await _run_lat_iteration(settings, ssh_kw, server_args, client_args, log, i)
+        if evt is not None:
+            yield evt
 
-            server_proc = await server_conn.create_process(shlex.join(server_args))
-            await asyncio.sleep(0.2)  # server listen 안정화
-            client_proc = await client_conn.create_process(shlex.join(client_args))
 
-            try:
-                # client 종료까지 대기 (sub-duration ~= 1s + setup 0.2s)
-                await asyncio.wait_for(
-                    client_proc.wait(), timeout=_LAT_SUB_DURATION + 4.0
-                )
-                if client_proc.stdout is not None:
-                    stdout_text = ""
-                    with suppress(Exception):
-                        stdout_text = await asyncio.wait_for(
-                            client_proc.stdout.read(), timeout=1.0
-                        )
-                    for raw in stdout_text.splitlines():
-                        evt = parse_ib_read_lat_line(raw.rstrip())
-                        if evt is not None:
-                            yield evt
-                            break  # 데이터 라인 1줄만 의미 있음
-            finally:
-                for proc in (client_proc, server_proc):
-                    try:
-                        proc.terminate()
-                        await asyncio.wait_for(proc.wait(), timeout=2.0)
-                    except (TimeoutError, asyncssh.ProcessError, OSError):
-                        with suppress(Exception):
-                            proc.kill()
-    finally:
-        for conn in (client_conn, server_conn):
-            if conn is None:
-                continue
+async def _run_lat_iteration(
+    settings: Settings,
+    ssh_kw: dict[str, Any],
+    server_args: list[str],
+    client_args: list[str],
+    log: Any,
+    idx: int,
+) -> MeasurementEvent | None:
+    """단일 sub-iteration. 실패해도 raise 하지 않고 None 반환."""
+    try:
+        async with (
+            asyncssh.connect(settings.server_a_host, **ssh_kw) as sa_conn,
+            asyncssh.connect(settings.server_b_host, **ssh_kw) as sb_conn,
+        ):
+            return await asyncio.wait_for(
+                _do_lat_iteration(sa_conn, sb_conn, server_args, client_args, log, idx),
+                timeout=_LAT_ITER_TIMEOUT,
+            )
+    except TimeoutError:
+        log.warning("lat_iter_timeout", idx=idx)
+        return None
+    except Exception as e:  # noqa: BLE001
+        log.warning("lat_iter_error", idx=idx, err=str(e))
+        return None
+
+
+async def _do_lat_iteration(
+    sa_conn: asyncssh.SSHClientConnection,
+    sb_conn: asyncssh.SSHClientConnection,
+    server_args: list[str],
+    client_args: list[str],
+    log: Any,
+    idx: int,
+) -> MeasurementEvent | None:
+    server_proc = await sa_conn.create_process(shlex.join(server_args))
+    try:
+        await asyncio.sleep(_LAT_SETUP_SLEEP)
+        client_proc = await sb_conn.create_process(shlex.join(client_args))
+        try:
+            await client_proc.wait()
+            stdout = client_proc.stdout
+            stdout_text = ""
+            if stdout is not None:
+                with suppress(Exception):
+                    stdout_text = await stdout.read()
+            for raw in stdout_text.splitlines():
+                evt = parse_ib_read_lat_line(raw.rstrip())
+                if evt is not None:
+                    return evt
+            stderr_text = ""
+            if client_proc.stderr is not None:
+                with suppress(Exception):
+                    stderr_text = await client_proc.stderr.read()
+            log.info(
+                "lat_iter_no_data",
+                idx=idx,
+                stdout_tail=stdout_text[-200:],
+                stderr_tail=stderr_text[-200:],
+            )
+            return None
+        finally:
             with suppress(Exception):
-                conn.close()
-                await conn.wait_closed()
+                client_proc.terminate()
+                await asyncio.wait_for(client_proc.wait(), timeout=1.5)
+            with suppress(Exception):
+                client_proc.kill()
+    finally:
+        with suppress(Exception):
+            server_proc.terminate()
+            await asyncio.wait_for(server_proc.wait(), timeout=1.5)
+        with suppress(Exception):
+            server_proc.kill()
