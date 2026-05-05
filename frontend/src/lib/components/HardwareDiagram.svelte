@@ -112,9 +112,11 @@
     <text class="liquid-tag" x="330" y="80" text-anchor="middle"
       ><tspan class="icon">◇</tspan>&nbsp;&nbsp;LIQUID-COOLED</text>
     <rect class="cpu-ram-box" x="90" y="100" width="120" height="42" />
-    <text class="cpu-ram-text" x="150" y="126" text-anchor="middle">CPU</text>
+    <text class="cpu-ram-text" x="150" y="120" text-anchor="middle">EPYC 9124</text>
+    <text class="cpu-ram-sub" x="150" y="135" text-anchor="middle">16C / 1S</text>
     <rect class="cpu-ram-box" x="225" y="100" width="120" height="42" />
-    <text class="cpu-ram-text" x="285" y="126" text-anchor="middle">RAM</text>
+    <text class="cpu-ram-text" x="285" y="120" text-anchor="middle">512 GB</text>
+    <text class="cpu-ram-sub" x="285" y="135" text-anchor="middle">DDR5</text>
     <rect class="cpu-ram-box" x="360" y="100" width="210" height="42" />
     <text class="cpu-ram-text" x="465" y="126" text-anchor="middle">PCIe5 x16</text>
     <rect class="nic-box" x="90" y="160" width="480" height="44" />
@@ -129,9 +131,11 @@
     <text class="liquid-tag" x="1490" y="80" text-anchor="middle"
       ><tspan class="icon">◇</tspan>&nbsp;&nbsp;LIQUID-COOLED</text>
     <rect class="cpu-ram-box" x="1250" y="100" width="120" height="42" />
-    <text class="cpu-ram-text" x="1310" y="126" text-anchor="middle">CPU</text>
+    <text class="cpu-ram-text" x="1310" y="120" text-anchor="middle">Xeon 6747P</text>
+    <text class="cpu-ram-sub" x="1310" y="135" text-anchor="middle">96C / 2S</text>
     <rect class="cpu-ram-box" x="1385" y="100" width="120" height="42" />
-    <text class="cpu-ram-text" x="1445" y="126" text-anchor="middle">RAM</text>
+    <text class="cpu-ram-text" x="1445" y="120" text-anchor="middle">512 GB</text>
+    <text class="cpu-ram-sub" x="1445" y="135" text-anchor="middle">DDR5</text>
     <rect class="cpu-ram-box" x="1520" y="100" width="210" height="42" />
     <text class="cpu-ram-text" x="1625" y="126" text-anchor="middle">PCIe5 x16</text>
     <rect class="nic-box" x="1250" y="160" width="480" height="44" />
@@ -188,7 +192,8 @@
   .link-label { fill: var(--color-muted); font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 600; }
   :global(.packet-dot) { fill: var(--color-accent); filter: drop-shadow(0 0 5px var(--color-accent)); }
   .cpu-ram-box { fill: var(--color-bg); stroke: var(--color-border); stroke-width: 1; rx: 4; }
-  .cpu-ram-text { fill: var(--color-text-2); font-family: var(--font-mono); font-size: 13px; font-weight: 600; letter-spacing: 0.1em; }
+  .cpu-ram-text { fill: var(--color-text-2); font-family: var(--font-mono); font-size: 11px; font-weight: 600; letter-spacing: 0.05em; }
+  .cpu-ram-sub  { fill: var(--color-muted);  font-family: var(--font-mono); font-size: 9px;  font-weight: 500; letter-spacing: 0.05em; }
   .transceiver-box { fill: var(--color-bg); stroke: var(--color-accent); stroke-width: 1; rx: 5; opacity: 0.8; }
   .transceiver-label { fill: var(--color-text-2); font-family: var(--font-mono); font-size: 12px; font-weight: 700; letter-spacing: 0.1em; }
   .transceiver-sub { fill: var(--color-muted); font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; }
