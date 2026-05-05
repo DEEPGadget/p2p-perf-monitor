@@ -47,7 +47,10 @@ class Settings(BaseSettings):
     server_b_netdev: str = "ens7f0np0"
 
     # ─── RoCE / RDMA ───
-    rdma_gid_index: int = 3
+    # GID 인덱스는 서버별 RoCE v2 IPv4 GID 위치가 다를 수 있어 분리.
+    # `show_gids` 로 v2 행의 INDEX 확인 (dg5W=3, dg5R=5 라이브 검증).
+    rdma_gid_index_a: int = 3
+    rdma_gid_index_b: int = 5
     rdma_mtu: int = 9000
 
     # ─── 측정 도구 카테고리 default ───

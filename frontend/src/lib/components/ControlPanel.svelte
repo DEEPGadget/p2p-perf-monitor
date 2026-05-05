@@ -2,7 +2,10 @@
   import type { SessionStateValue, StartRequest, ToolKind } from '$lib/types/api';
   import { apiStart, apiStop } from '$lib/utils/api';
 
-  let { state }: { state: SessionStateValue } = $props();
+  let {
+    sessionState,
+    bidir = $bindable(false),
+  }: { sessionState: SessionStateValue; bidir?: boolean } = $props();
 
   const TOOLS: ToolKind[] = ['ib_write_bw', 'ib_read_lat', 'iperf3', 'mock'];
   const SIZES = [
@@ -18,12 +21,12 @@
   let toolIdx = $state(0);
   let sizeIdx = $state(3); // 64K
   let durIdx = $state(1); // 60s
-  let bidir = $state<'UNI' | 'BIDIR'>('UNI');
 
   const tool = $derived(TOOLS[toolIdx]);
   const size = $derived(SIZES[sizeIdx]);
   const dur = $derived(DURATIONS[durIdx]);
-  const isRunning = $derived(state === 'running' || state === 'connecting');
+  const dirLabel = $derived(bidir ? 'BIDIR' : 'UNI');
+  const isRunning = $derived(sessionState === 'running' || sessionState === 'connecting');
 
   function cycle<T>(arr: T[], idx: number): number {
     return (idx + 1) % arr.length;
@@ -42,7 +45,7 @@
       tool,
       duration_sec: dur,
       msg_size: size.val,
-      bidir: bidir === 'BIDIR',
+      bidir,
     };
     try {
       await apiStart(req);
@@ -80,12 +83,12 @@
   <button
     class="control-group"
     type="button"
-    onclick={() => (bidir = bidir === 'UNI' ? 'BIDIR' : 'UNI')}
+    onclick={() => (bidir = !bidir)}
     disabled={isRunning}
   >
     <div>
       <div class="control-label">DIRECTION</div>
-      <div class="control-value">{bidir}</div>
+      <div class="control-value">{dirLabel}</div>
     </div>
     <span class="control-arrow">▾</span>
   </button>

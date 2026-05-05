@@ -11,7 +11,7 @@
   import { nicTelemetryStore } from '$lib/stores/nic_telemetry.svelte';
   import { sessionStore } from '$lib/stores/session.svelte';
   import { apiStatus } from '$lib/utils/api';
-  import { subscribe } from '$lib/utils/sse';
+  import { subscribeSse } from "$lib/utils/sse";
 
   let bidir = $state(false);
   let unsubscribe: (() => void) | undefined;
@@ -36,7 +36,7 @@
       // ignore
     }
     // SSE 구독
-    unsubscribe = subscribe({
+    unsubscribe = subscribeSse({
       onMeasurement: (e) => measurementStore.push(e),
       onNicTemp: (e) => {
         if (sessionStore.state === 'running') {
@@ -64,7 +64,7 @@
       <BandwidthChart {bidir} />
       <NicTempPanel />
     </section>
-    <ControlPanel state={sessionStore.state} />
+    <ControlPanel sessionState={sessionStore.state} bind:bidir />
   </main>
   <footer>
     <div class="meta">

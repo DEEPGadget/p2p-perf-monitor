@@ -18,7 +18,7 @@ export interface SseHandlers {
   onError?: (e: ApiErrorEvent) => void;
 }
 
-export function subscribe(handlers: SseHandlers): () => void {
+export function subscribeSse(handlers: SseHandlers): () => void {
   const es = new EventSource('/api/stream');
 
   if (handlers.onMeasurement) {

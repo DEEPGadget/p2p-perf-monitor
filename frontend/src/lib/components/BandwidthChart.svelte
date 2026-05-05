@@ -9,8 +9,18 @@
   let container: HTMLDivElement | undefined = $state();
   let chart: import('echarts').ECharts | null = null;
 
-  const yMax = $derived(bidir ? 400 : 200);
-  const yInterval = $derived(bidir ? 100 : 50);
+  // 데이터 max 기반 동적 yMax — 50 단위 round-up, 데이터 없을 땐 모드별 baseline.
+  const dataPeak = $derived(
+    measurementStore.values.length > 0 ? Math.max(...measurementStore.values) : 0,
+  );
+  const yMax = $derived.by(() => {
+    const baseline = bidir ? 400 : 200;
+    if (dataPeak === 0) return baseline;
+    const padded = dataPeak * 1.15; // 15% headroom
+    const rounded = Math.ceil(padded / 50) * 50;
+    return Math.max(50, rounded);
+  });
+  const yInterval = $derived(yMax <= 200 ? 50 : 100);
 
   function baseOption() {
     return {
@@ -19,7 +29,13 @@
       xAxis: {
         type: 'category',
         data: [] as string[],
-        axisLabel: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
+        axisLabel: {
+          color: '#a1a1aa',
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 11,
+          interval: 'auto',
+          hideOverlap: true,
+        },
         axisLine: { lineStyle: { color: '#262626' } },
         axisTick: { show: false },
       },
@@ -77,20 +93,26 @@
   });
 
   // 데이터 push 시 chart 업데이트
+  // NOTE: $effect 는 첫 run 에 read 한 reactive value 만 tracking 한다.
+  // chart guard 가 store read 를 가리면 deps 가 영원히 등록 안 되어 재실행 X.
   $effect(() => {
+    const labels = measurementStore.labels;
+    const values = measurementStore.values;
     if (!chart) return;
     chart.setOption(
-      {
-        xAxis: { data: measurementStore.labels },
-        series: [{ data: measurementStore.values }],
-      },
+      { xAxis: { data: labels }, series: [{ data: values }] },
       { lazyUpdate: true },
     );
   });
 
-  // bidir 변경 시 Y축 max
+  // bidir / dataPeak 변화에 따른 Y축 갱신
+  // NOTE: chart?.setOption(...) 의 인자 평가는 chart 가 null 이면 short-circuit 되어
+  // yMax/yInterval read 가 누락 → tracking 안 됨. read 우선.
   $effect(() => {
-    chart?.setOption({ yAxis: { max: yMax, interval: yInterval } });
+    const max = yMax;
+    const interval = yInterval;
+    if (!chart) return;
+    chart.setOption({ yAxis: { max, interval } });
   });
 </script>
 

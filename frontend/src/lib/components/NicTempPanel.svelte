@@ -13,43 +13,72 @@
   const sevModA = $derived(severity(nicTelemetryStore.modA, 'module'));
   const sevModB = $derived(severity(nicTelemetryStore.modB, 'module'));
 
+  // 4채널 시계열 라인 — 색은 cyan 단색, IC=실선 / MOD=점선, dg5W/dg5R 두께로 구분
+  const SERIES_NAMES = ['IC · dg5W', 'IC · dg5R', 'MOD · dg5W', 'MOD · dg5R'];
+  const ACCENT = '#00d9ff';
+
   onMount(async () => {
     const echarts = await import('echarts');
     if (container) {
       chart = echarts.init(container, null, { renderer: 'canvas' });
       chart.setOption({
         animation: false,
-        grid: { left: 36, right: 12, top: 28, bottom: 24 },
+        grid: { left: 44, right: 16, top: 32, bottom: 32 },
         xAxis: {
           type: 'category',
           data: [],
           boundaryGap: false,
-          axisLabel: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 9 },
+          axisLabel: {
+            color: '#a1a1aa',
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 11,
+            interval: 'auto',
+            hideOverlap: true,
+          },
           axisLine: { lineStyle: { color: '#262626' } },
           axisTick: { show: false },
         },
         yAxis: {
-          type: 'value', min: 25, max: 90, interval: 15,
-          axisLabel: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 9, formatter: '{value}°' },
-          axisLine: { show: false }, axisTick: { show: false },
+          type: 'value',
+          min: 25,
+          max: 90,
+          interval: 15,
+          axisLabel: {
+            color: '#a1a1aa',
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: 11,
+            formatter: '{value}°',
+          },
+          axisLine: { show: false },
+          axisTick: { show: false },
           splitLine: { lineStyle: { color: '#1c1c1c' } },
         },
         legend: {
-          data: ['IC · dg5W', 'IC · dg5R', 'MOD · dg5W', 'MOD · dg5R'],
-          textStyle: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 10 },
-          top: 0, right: 4, itemWidth: 16, itemHeight: 2, itemGap: 10,
+          data: SERIES_NAMES,
+          textStyle: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
+          top: 4,
+          right: 4,
+          itemWidth: 18,
+          itemHeight: 2,
+          itemGap: 12,
         },
         tooltip: {
           trigger: 'axis',
           backgroundColor: '#141414',
           borderColor: '#262626',
-          textStyle: { color: '#fff', fontFamily: 'JetBrains Mono, monospace', fontSize: 11 },
+          textStyle: { color: '#fff', fontFamily: 'JetBrains Mono, monospace', fontSize: 12 },
+          valueFormatter: (v: number | null) =>
+            v == null ? '—' : `${v.toFixed(1)}°C`,
         },
         series: [
-          { name: 'IC · dg5W',  type: 'line', data: [], smooth: true, symbol: 'none', lineStyle: { color: '#00d9ff', width: 2, type: 'solid' } },
-          { name: 'IC · dg5R',  type: 'line', data: [], smooth: true, symbol: 'none', lineStyle: { color: '#f59e0b', width: 2, type: 'solid' } },
-          { name: 'MOD · dg5W', type: 'line', data: [], smooth: true, symbol: 'none', lineStyle: { color: '#00d9ff', width: 1.6, type: 'dashed' } },
-          { name: 'MOD · dg5R', type: 'line', data: [], smooth: true, symbol: 'none', lineStyle: { color: '#f59e0b', width: 1.6, type: 'dashed' } },
+          { name: 'IC · dg5W',  type: 'line', data: [], smooth: true, symbol: 'none',
+            lineStyle: { color: ACCENT, width: 2.4, type: 'solid' } },
+          { name: 'IC · dg5R',  type: 'line', data: [], smooth: true, symbol: 'none',
+            lineStyle: { color: ACCENT, width: 1.4, type: 'solid' } },
+          { name: 'MOD · dg5W', type: 'line', data: [], smooth: true, symbol: 'none',
+            lineStyle: { color: ACCENT, width: 2.4, type: 'dashed' } },
+          { name: 'MOD · dg5R', type: 'line', data: [], smooth: true, symbol: 'none',
+            lineStyle: { color: ACCENT, width: 1.4, type: 'dashed' } },
         ],
       });
     }
@@ -63,16 +92,17 @@
   });
 
   $effect(() => {
+    // store read 우선 — chart guard 가 read 를 가리면 deps tracking 누락.
+    const labels = nicTelemetryStore.labels;
+    const icA = nicTelemetryStore.icAValues;
+    const icB = nicTelemetryStore.icBValues;
+    const modA = nicTelemetryStore.modAValues;
+    const modB = nicTelemetryStore.modBValues;
     if (!chart) return;
     chart.setOption(
       {
-        xAxis: { data: nicTelemetryStore.labels },
-        series: [
-          { data: nicTelemetryStore.icAValues },
-          { data: nicTelemetryStore.icBValues },
-          { data: nicTelemetryStore.modAValues },
-          { data: nicTelemetryStore.modBValues },
-        ],
+        xAxis: { data: labels },
+        series: [{ data: icA }, { data: icB }, { data: modA }, { data: modB }],
       },
       { lazyUpdate: true },
     );
@@ -91,28 +121,28 @@
     </div>
   </div>
   <div class="nic-tiles">
-    <div class="nic-tile {sevIcA.cssClass}">
+    <div class="nic-tile group-w {sevIcA.cssClass}">
       <div class="nic-tile-label">IC · dg5W</div>
       <div class="nic-tile-value-row">
         <span class="nic-tile-value">{formatCelsius(nicTelemetryStore.icA)}</span>
         <span class="nic-tile-unit">°C</span>
       </div>
     </div>
-    <div class="nic-tile {sevIcB.cssClass}">
+    <div class="nic-tile group-r {sevIcB.cssClass}">
       <div class="nic-tile-label">IC · dg5R</div>
       <div class="nic-tile-value-row">
         <span class="nic-tile-value">{formatCelsius(nicTelemetryStore.icB)}</span>
         <span class="nic-tile-unit">°C</span>
       </div>
     </div>
-    <div class="nic-tile module {sevModA.cssClass}">
+    <div class="nic-tile group-w module {sevModA.cssClass}">
       <div class="nic-tile-label">MODULE · dg5W</div>
       <div class="nic-tile-value-row">
         <span class="nic-tile-value">{formatCelsius(nicTelemetryStore.modA)}</span>
         <span class="nic-tile-unit">°C</span>
       </div>
     </div>
-    <div class="nic-tile module {sevModB.cssClass}">
+    <div class="nic-tile group-r module {sevModB.cssClass}">
       <div class="nic-tile-label">MODULE · dg5R</div>
       <div class="nic-tile-value-row">
         <span class="nic-tile-value">{formatCelsius(nicTelemetryStore.modB)}</span>
@@ -181,15 +211,16 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-auto-rows: 1fr;
-    gap: 10px;
-    margin: 10px 0 12px;
+    gap: 8px;
+    margin: 8px 0 10px;
+    flex-shrink: 0;
   }
   .nic-tile {
     background: var(--color-surface-2);
     border: 1px solid var(--color-border);
     border-left: 3px solid var(--color-accent);
     border-radius: 10px;
-    padding: 8px 12px;
+    padding: 6px 12px;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
   }
   .nic-tile.module { border-left-style: dashed; }
@@ -207,7 +238,7 @@
     letter-spacing: 0.18em;
     text-transform: uppercase;
     font-weight: 700;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
   }
   .nic-tile-value-row {
     display: flex;
@@ -216,7 +247,7 @@
   }
   .nic-tile-value {
     font-family: var(--font-mono);
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 700;
     color: var(--color-text);
     line-height: 1;
@@ -225,9 +256,9 @@
   }
   .nic-tile-unit {
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 11px;
     color: var(--color-muted);
     font-weight: 500;
   }
-  .nic-chart { flex: 1; min-height: 0; }
+  .nic-chart { flex: 1; min-height: 160px; }
 </style>
