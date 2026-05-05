@@ -37,19 +37,23 @@ check_prereqs() {
 }
 
 prepare_etc() {
-  log "/etc/p2p-monitor 준비 (700, root:root)"
-  install -d -m 700 -o root -g root "${ETC_DIR}"
+  # 컨테이너 내부 비루트 user(uid 1000) 가 키·known_hosts·.env 를 read 할 수
+  # 있어야 하므로 디렉터리 755. 폐쇄망 부스 환경 가정.
+  log "/etc/p2p-monitor 준비 (755, root:root)"
+  install -d -m 755 -o root -g root "${ETC_DIR}"
 }
 
 generate_key() {
   local key="${ETC_DIR}/${KEY_NAME}"
-  if [[ -f "${key}" ]]; then
+  if [[ ! -f "${key}" ]]; then
+    log "SSH 키 생성 (${key})"
+    ssh-keygen -t ed25519 -N '' -C "p2p-monitor@$(hostname)" -f "${key}"
+  else
     log "SSH 키 이미 존재 — skip (${key})"
-    return
   fi
-  log "SSH 키 생성 (${key})"
-  ssh-keygen -t ed25519 -N '' -C "p2p-monitor@$(hostname)" -f "${key}"
-  chmod 600 "${key}"
+  # 컨테이너 비루트 user 가 read 가능해야 — 644 (폐쇄망 부스 가정)
+  chmod 644 "${key}"
+  chmod 644 "${key}.pub" 2>/dev/null || true
 }
 
 copy_id_if_needed() {
@@ -72,7 +76,7 @@ scan_known_hosts() {
     ssh-keyscan -t ed25519,rsa "${h}" >>"${kh}.tmp" 2>/dev/null || warn "ssh-keyscan ${h} 실패"
   done
   mv "${kh}.tmp" "${kh}"
-  chmod 600 "${kh}"
+  chmod 644 "${kh}"
 }
 
 write_env_if_missing() {
@@ -108,7 +112,7 @@ BIND_HOST=0.0.0.0
 BIND_PORT=8080
 LOG_LEVEL=INFO
 EOF
-  chmod 600 "${env}"
+  chmod 644 "${env}"
 }
 
 deploy_app_dir() {

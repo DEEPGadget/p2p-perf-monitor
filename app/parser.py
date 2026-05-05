@@ -12,12 +12,19 @@ from app.schemas import MeasurementEvent
 #  #bytes  #iterations  BW peak[Gb/sec]  BW average[Gb/sec]  MsgRate[Mpps]
 _IB_BW_LINE = re.compile(r"^\s*(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*$")
 
-# ib_read_lat 데이터 라인:
-#  #bytes #iter  t_min  t_max  t_typical  t_avg  t_stdev  99%  99.9%
-_IB_LAT_LINE = re.compile(
+# ib_read_lat 데이터 라인 — 두 가지 모드:
+#  (A) `-n <iter>` (iterations): 9 컬럼
+#      #bytes #iter  t_min  t_max  t_typical  t_avg  t_stdev  99%  99.9%
+#  (B) `-D <sec>`   (duration):  4 컬럼
+#      #bytes #iter  t_avg[usec]  tps average
+# 라이브 검증 결과 우리는 (B) 사용 중 → 둘 다 매치하도록 분리.
+_IB_LAT_LINE_FULL = re.compile(
     r"^\s*(\d+)\s+(\d+)\s+"
     r"([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)\s+"
     r"([\d.]+)\s+([\d.]+)\s*$"
+)
+_IB_LAT_LINE_DUR = re.compile(
+    r"^\s*(\d+)\s+(\d+)\s+([\d.]+)\s+([\d.]+)\s*$"
 )
 
 # iperf3 default --length (200G 환경에서 기본 사용)
@@ -163,23 +170,39 @@ def parse_ib_write_bw_line(
 def parse_ib_read_lat_line(line: str, ts: datetime | None = None) -> MeasurementEvent | None:
     """`ib_read_lat` stdout 한 라인 파싱.
 
-    bw_peak/bw_avg는 0.0 (lat 측정에선 의미 없음). lat_us = t_avg, lat_p99_us = 99%.
+    iterations 모드 (9 컬럼) → t_avg + p99 채움.
+    duration   모드 (4 컬럼) → t_avg, p99=None.
+    bw_peak/bw_avg 는 0.0 (lat 측정에선 의미 없음).
     """
-    m = _IB_LAT_LINE.match(line)
-    if not m:
-        return None
-    bytes_, iters, _t_min, _t_max, _t_typical, t_avg, _t_stdev, p99, _p99_9 = m.groups()
-    return MeasurementEvent(
-        ts=ts or _now(),
-        msg_size=int(bytes_),
-        iterations=int(iters),
-        bw_peak_gbps=0.0,
-        bw_avg_gbps=0.0,
-        lat_us=float(t_avg),
-        lat_p99_us=float(p99),
-        tool_category="perftest",
-        sub_tool="ib_read_lat",
-    )
+    m = _IB_LAT_LINE_FULL.match(line)
+    if m:
+        bytes_, iters, _t_min, _t_max, _t_typical, t_avg, _t_stdev, p99, _p99_9 = m.groups()
+        return MeasurementEvent(
+            ts=ts or _now(),
+            msg_size=int(bytes_),
+            iterations=int(iters),
+            bw_peak_gbps=0.0,
+            bw_avg_gbps=0.0,
+            lat_us=float(t_avg),
+            lat_p99_us=float(p99),
+            tool_category="perftest",
+            sub_tool="ib_read_lat",
+        )
+    m = _IB_LAT_LINE_DUR.match(line)
+    if m:
+        bytes_, iters, t_avg, _tps = m.groups()
+        return MeasurementEvent(
+            ts=ts or _now(),
+            msg_size=int(bytes_),
+            iterations=int(iters),
+            bw_peak_gbps=0.0,
+            bw_avg_gbps=0.0,
+            lat_us=float(t_avg),
+            lat_p99_us=None,
+            tool_category="perftest",
+            sub_tool="ib_read_lat",
+        )
+    return None
 
 
 def parse_iperf3_json(
