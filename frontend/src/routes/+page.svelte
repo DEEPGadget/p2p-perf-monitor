@@ -89,7 +89,7 @@
   main {
     flex: 1;
     display: grid;
-    grid-template-rows: 280px 200px 1fr 72px;
+    grid-template-rows: 280px 200px 1fr 96px;
     gap: 20px;
     padding: 20px 40px;
     overflow: hidden;
