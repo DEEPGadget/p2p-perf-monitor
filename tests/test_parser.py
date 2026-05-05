@@ -12,6 +12,7 @@ from app.parser import (
     parse_ib_read_lat_line,
     parse_ib_write_bw_line,
     parse_iperf3_json,
+    parse_sensors_json,
     parse_sysfs_stats,
 )
 from app.schemas import MeasurementEvent
@@ -240,3 +241,51 @@ class TestMakeSysfsEvent:
         evt = make_sysfs_event(187.0, msg_size=65536, sub_tool="mock", ts=FIXED_TS)
         assert evt.tool_category == "mock"
         assert evt.sub_tool == "mock"
+
+
+# ─────────────────────────── sensors -j (NIC IC + Module 온도) ───────────────────────────
+
+
+class TestParseSensorsJson:
+    def test_dg5w_fixture(self) -> None:
+        text = (FIXTURES / "sensors_dg5w.json").read_text()
+        ic, mod = parse_sensors_json(text)
+        # mlx5-pci-0200 (Module0 있는 chip 우선)
+        assert ic == pytest.approx(46.0)
+        assert mod == pytest.approx(57.0)
+
+    def test_dg5r_fixture(self) -> None:
+        text = (FIXTURES / "sensors_dg5r.json").read_text()
+        ic, mod = parse_sensors_json(text)
+        # mlx5-pci-6400 (Module0 있는 chip 우선)
+        assert ic == pytest.approx(38.0)
+        assert mod == pytest.approx(47.0)
+
+    def test_pci_prefix_filter(self) -> None:
+        text = (FIXTURES / "sensors_dg5w.json").read_text()
+        # mlx5-pci-0201 (포트1, Module 없음) 명시 선택
+        ic, mod = parse_sensors_json(text, pci_chip_prefix="mlx5-pci-0201")
+        assert ic == pytest.approx(46.0)
+        assert mod is None
+
+    def test_no_mlx5_chip(self) -> None:
+        text = '{"coretemp-isa-0000": {"Package id 0": {"temp1_input": 40.0}}}'
+        assert parse_sensors_json(text) == (None, None)
+
+    def test_invalid_json(self) -> None:
+        assert parse_sensors_json("not json") == (None, None)
+
+    def test_empty_json(self) -> None:
+        assert parse_sensors_json("{}") == (None, None)
+
+    def test_module_present_no_asic(self) -> None:
+        text = '{"mlx5-pci-0200": {"Module0": {"temp2_input": 60.0}}}'
+        ic, mod = parse_sensors_json(text)
+        assert ic is None
+        assert mod == pytest.approx(60.0)
+
+    def test_asic_present_no_module(self) -> None:
+        text = '{"mlx5-pci-0200": {"asic": {"temp1_input": 50.0}}}'
+        ic, mod = parse_sensors_json(text)
+        assert ic == pytest.approx(50.0)
+        assert mod is None

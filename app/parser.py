@@ -47,6 +47,57 @@ _VALID_SUB_TOOLS = ("ib_write_bw", "ib_read_lat", "iperf3", "mock")
 _PERFTEST_SUBS = ("ib_write_bw", "ib_read_lat")
 
 
+def parse_sensors_json(
+    text: str, pci_chip_prefix: str | None = None
+) -> tuple[float | None, float | None]:
+    """`sensors -j` 출력 → (asic_ic_celsius, module_celsius).
+
+    mlx5 chip 중 `Module0` 키가 있는 chip = 사용 중인 포트 (트랜시버 연결됨).
+    pci_chip_prefix 가 주어지면 해당 chip 만 매칭 (예: "mlx5-pci-0200").
+
+    실패 / 키 부재 시 None 반환 (UI 측에서 직전 값 유지).
+    """
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return None, None
+    if not isinstance(data, dict):
+        return None, None
+
+    candidates: list[tuple[str, dict]] = []
+    for chip_name, body in data.items():
+        if not isinstance(body, dict):
+            continue
+        if not chip_name.startswith("mlx5-pci-"):
+            continue
+        if pci_chip_prefix and not chip_name.startswith(pci_chip_prefix):
+            continue
+        candidates.append((chip_name, body))
+
+    if not candidates:
+        return None, None
+
+    # Module0 키가 있는 chip 우선 (활성 포트). 없으면 첫 매치
+    selected = next(((c, b) for c, b in candidates if "Module0" in b), candidates[0])
+    body = selected[1]
+
+    ic: float | None = None
+    asic = body.get("asic")
+    if isinstance(asic, dict):
+        v = asic.get("temp1_input")
+        if isinstance(v, (int, float)):
+            ic = float(v)
+
+    module: float | None = None
+    mod = body.get("Module0")
+    if isinstance(mod, dict):
+        v = mod.get("temp2_input")
+        if isinstance(v, (int, float)):
+            module = float(v)
+
+    return ic, module
+
+
 def make_sysfs_event(
     bw_gbps: float,
     msg_size: int,

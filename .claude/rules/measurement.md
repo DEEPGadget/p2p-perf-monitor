@@ -235,48 +235,62 @@ class MeasurementEvent(BaseModel):
 
 측정 BW와 별도 채널로 양쪽 NIC의 (a) ASIC IC 온도, (b) 광 트랜시버 모듈 온도를 항상 폴링·발행. 측정 중일 때는 누적 시계열로, IDLE에서도 baseline 모니터링 표시.
 
-### 1) NIC IC 온도
+### 측정 도구 — `sensors -j` (lm-sensors)
 
-**우선순위**: ① sysfs hwmon (sudo 불필요) → ② `mget_temp` (sudo NOPASSWD 필요)
-
-**1차 — sysfs hwmon** (mlx5 드라이버가 노출하는 경우):
-```bash
-# mlx5_core 의 hwmon 인덱스 찾기
-for h in /sys/class/hwmon/hwmon*; do
-    name=$(cat "$h/name" 2>/dev/null)
-    [ "$name" = "mlx5_core" ] && cat "$h/temp1_input"
-done
-# 출력: 62000 (millidegree → /1000)
-```
-
-**2차 — `mget_temp`** (OFED 도구, sudo 필요):
-```bash
-sudo mst start                                          # 서비스 1회 시작
-sudo mst status -v                                       # → /dev/mst/mt4129_pciconf0
-sudo mget_temp -d /dev/mst/mt4129_pciconf0              # 출력: 62
-```
-
-`nic_telemetry.py`는 1차 sysfs를 매 폴링마다 시도하고, 실패 시 2차 `mget_temp`로 fallback. 권한 정책 → `.claude/rules/security.md`
-
-### 2) 광 트랜시버 모듈 온도 (QSFP56)
+라이브 검증 결과 `lm-sensors` 가 IC + Module 둘 다 한 번의 호출로 노출. **sudo 불필요**.
 
 ```bash
-# 인터페이스명 확인 (mlx5_0 의 netdev)
-ls /sys/class/infiniband/mlx5_0/device/net/
-# → enp1s0f0np0
-
-# 트랜시버 모듈 정보 (DDM/DOM 출력)
-sudo ethtool -m enp1s0f0np0 | grep -i 'Module temperature'
-# 출력: Module temperature                        : 0xa6 (41.55 degrees C)
+sensors -j   # JSON 출력
 ```
 
-또는 `mlxlink` (MLNX_OFED 도구):
-```bash
-sudo mlxlink -d /dev/mst/mt4129_pciconf0 --json
-# JSON 출력의 module_info.temperature 필드
+출력 예 (mlx5 chip만 발췌):
+```json
+{
+  "mlx5-pci-0200": {
+    "asic":    {"temp1_input": 46.0, "temp1_crit": 105.0, "temp1_highest": 47.0},
+    "Module0": {"temp2_input": 57.0, "temp2_crit":  70.0, "temp2_highest": 58.0}
+  },
+  "mlx5-pci-0201": {
+    "asic":    {"temp1_input": 46.0, "temp1_crit": 105.0}
+  }
+}
 ```
 
-`ethtool -m`이 가장 호환성 높음. mlxlink은 추가 진단 정보 (rx_power 등)도 제공.
+- chip 이름: `mlx5-pci-<bus><slot><func>` (예: `mlx5-pci-0200` = PCIe 02:00.0)
+- 한 NIC에 두 chip 노출 (포트 0, 포트 1). **`Module0` 키가 있는 chip = 트랜시버 연결된 활성 포트** → 자동 선택
+- 필드:
+  - IC ASIC 온도: `<chip>.asic.temp1_input` (°C)
+  - Module 트랜시버: `<chip>.Module0.temp2_input` (°C)
+  - 임계값: `temp1_crit` / `temp2_crit` 도 같이 노출 (옵션 활용)
+
+### 파싱 (`parse_sensors_json`)
+
+```python
+def parse_sensors_json(
+    text: str, pci_chip_prefix: str | None = None
+) -> tuple[float | None, float | None]:
+    """sensors -j → (ic_celsius, module_celsius). 실패 시 None."""
+```
+
+- `pci_chip_prefix`: 특정 chip 명시 (예: `"mlx5-pci-0200"`). 미지정 시 Module0 있는 chip 자동 선택
+- 실패 / 키 부재 / 잘못된 JSON → `(None, None)` 반환 → UI 측에서 직전 값 유지
+
+### 폴링 정책
+
+- 주기: **1Hz** (BW 5Hz와 별도. 온도는 천천히 변함)
+- 양쪽 서버 동시 polling: `sensors -j` 한 번 호출에 IC + Module 함께
+- `nic_telemetry.py` 가 SSH 연결 1개씩 (양쪽 서버) — 측정 SSH와 별도 pool, fault isolation
+- 실패 시 직전 값 유지 + UI는 "—°C"
+- IDLE/RUNNING 무관 항상 동작 (시스템 health)
+
+### 임계값 / 색상 코딩 (UI)
+
+| 컴포넌트 | 정상 | 경고 | 위험 | 운영 한계 |
+|---------|------|------|------|----------|
+| NIC IC (ASIC) | < 75°C | 75 ~ 85°C | ≥ 85°C | ~105°C (sensors `temp1_crit`) |
+| 광 모듈 (QSFP56) | < 65°C | 65 ~ 75°C | ≥ 75°C | ~70°C (sensors `temp2_crit`) |
+
+> sensors 가 노출하는 `temp_crit` 값을 향후 동적 임계값으로 사용 가능. 현재는 정적 임계값.
 
 ### 폴링 정책
 
@@ -294,7 +308,7 @@ class NicTelemetry(BaseModel):
     server_b_ic_c: float | None
     server_a_module_c: float | None     # 광 트랜시버 모듈 온도
     server_b_module_c: float | None
-    source: Literal["mget_temp+ethtool", "sysfs+ethtool", "mlxlink", "mock"]
+    source: Literal["sensors", "mock"]
 ```
 
 ### SSE 이벤트

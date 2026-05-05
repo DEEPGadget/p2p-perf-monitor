@@ -1,0 +1,19 @@
+{
+  "mlx5-pci-0201": {
+    "Adapter": "PCI adapter",
+    "asic": {"temp1_input": 46.0, "temp1_crit": 105.0, "temp1_highest": 47.0}
+  },
+  "bnxt_en-pci-0301": {
+    "Adapter": "PCI adapter",
+    "temp1": {"temp1_input": 83.0}
+  },
+  "k10temp-pci-00c3": {
+    "Adapter": "PCI adapter",
+    "Tctl": {"temp1_input": 56.25}
+  },
+  "mlx5-pci-0200": {
+    "Adapter": "PCI adapter",
+    "asic": {"temp1_input": 46.0, "temp1_crit": 105.0, "temp1_highest": 47.0},
+    "Module0": {"temp2_input": 57.0, "temp2_crit": 70.0, "temp2_highest": 58.0}
+  }
+}

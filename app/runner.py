@@ -128,7 +128,11 @@ async def _mock_lat_session(req: StartRequest) -> AsyncIterator[MeasurementEvent
 def _build_ib_write_bw_args(
     req: StartRequest, settings: Settings, peer_rdma: str | None
 ) -> list[str]:
-    """`ib_write_bw` 명령 인자. allowlist 검증된 값만 사용."""
+    """`ib_write_bw` 명령 인자. allowlist 검증된 값만 사용.
+
+    `-m 4096` (RoCE path MTU): perftest default 1024 → ConnectX-6 HCA max 4096 으로
+    명시. 라이브 측정 188 → 196 Gb/s (라인 레이트 98%) 향상.
+    """
     args = [
         "ib_write_bw",
         "-d",
@@ -139,6 +143,8 @@ def _build_ib_write_bw_args(
         str(req.duration_sec),
         "-x",
         str(settings.rdma_gid_index),
+        "-m",
+        "4096",
         "-s",
         str(req.msg_size),
         "-q",
