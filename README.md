@@ -1,6 +1,6 @@
 # p2p-perf-monitor
 
-ManyCore DeepGadget 서버 2대(`dg5W-H200NVL-4` / `dg5R-PRO6000SE-10`) 간 200G RoCE P2P 통신 성능을 실시간 측정·시각화하는 Web 기반 데모 도구. 전시회 시연 용도.
+ManyCore DeepGadget 서버 2대(`dg5W-H200NVL-4` / `dg5R-PRO6000SE-8`) 간 200G RoCE P2P 통신 성능을 실시간 측정·시각화하는 Web 기반 데모 도구. 전시회 시연 용도.
 
 ## 목적
 

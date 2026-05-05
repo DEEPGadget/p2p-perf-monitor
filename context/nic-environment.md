@@ -20,7 +20,7 @@ PCIe Gen5 x16 단방향 실효 BW ≈ 256 Gb/s. 두 포트 동시 200G 단방향
 
 | 항목 | Server A | Server B |
 |------|---------|---------|
-| 모델 | **dg5W-H200NVL-4** (Tower 5U) | **dg5R-PRO6000SE-10** (랙마운트 6U) |
+| 모델 | **dg5W-H200NVL-4** (Tower 5U) | **dg5R-PRO6000SE-8** (랙마운트 6U) |
 | 가속기 | NVIDIA H200 NVL × 4 | RTX PRO 6000 Server Edition × 10 |
 | OS | Ubuntu 22.04 LTS (or 24.04) | 동일 |
 | Kernel | 5.15+ (RoCE v2 안정 동작) | 동일 |

@@ -10,14 +10,19 @@ import contextlib
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api import health, measure, stream
 from app.config import Settings
 from app.nic_telemetry import NicTelemetryPoller
 from app.state import SessionManager
+
+# frontend 빌드 경로 (프로젝트 루트 기준 frontend/build)
+_FRONTEND_BUILD = Path(__file__).resolve().parent.parent / "frontend" / "build"
 
 log = logging.getLogger(__name__)
 
@@ -76,6 +81,15 @@ def create_app() -> FastAPI:
     app.include_router(health.router, prefix="/api")
     app.include_router(measure.router, prefix="/api")
     app.include_router(stream.router, prefix="/api")
+
+    # frontend SPA 정적 마운트 (빌드 결과 있을 때만). adapter-static + html=True 로
+    # SPA fallback (`index.html`) 처리. /api/* 는 위 라우터가 우선.
+    if _FRONTEND_BUILD.is_dir():
+        app.mount(
+            "/",
+            StaticFiles(directory=str(_FRONTEND_BUILD), html=True),
+            name="frontend",
+        )
 
     return app
 

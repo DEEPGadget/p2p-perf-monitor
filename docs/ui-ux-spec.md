@@ -70,7 +70,7 @@
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │ ┌──────────────────────┐ ┌─QSFP56─┐  ●●●●  ┌─QSFP56─┐ ┌──────────────────┐│ HARDWARE
-│ │ dg5W-H200NVL-4       │ │ Liquid │ link  │ Liquid │ │ dg5R-PRO6000SE-10│ │ DIAGRAM
+│ │ dg5W-H200NVL-4       │ │ Liquid │ link  │ Liquid │ │ dg5R-PRO6000SE-8│ │ DIAGRAM
 │ │ ◇ LIQUID-COOLED      │ │ MODULE │═══════│ MODULE │ │ ◇ LIQUID-COOLED  │ │ (h:280px)
 │ │ [CPU][RAM][PCIe5x16] │ │  41°C  │       │  43°C  │ │[CPU][RAM][PCIe5] │ │
 │ │ ConnectX-6 · mlx5_0  │ └────────┘       └────────┘ │ConnectX-6·mlx5_0 │ │ packet flow
@@ -141,7 +141,7 @@ KPI 카드 폰트: 72px (이전 88px에서 축소 — HARDWARE 확대분 보전)
 - **서버 박스 2개** (좌·우, 각 540×240px) — surface 배경, border, 내부에 CPU/RAM/PCIe 박스
 - **서버 라벨** (박스 상단, 22px Bold mono):
   - 좌: `dg5W-H200NVL-4`
-  - 우: `dg5R-PRO6000SE-10`
+  - 우: `dg5R-PRO6000SE-8`
 - **LIQUID-COOLED 태그** (서버 라벨 바로 아래, 11px tracking-wider, accent ◇ 아이콘): 서버 자체가 액냉 시스템임을 명시
 - **NIC indicator 박스** (각 서버 박스 안): "ConnectX-6 · mlx5_0" 라벨 (16px accent)
 - **NIC IC TEMP row** (NIC 박스 아래): "IC TEMP" 태그 + 18px 굵은 값 + "°C" — 1Hz 갱신

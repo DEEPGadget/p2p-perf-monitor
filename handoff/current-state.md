@@ -38,7 +38,7 @@
 | 8 | 양방향 모드 | UNI / BIDIR 토글 (perftest `-b`, iperf3 `--bidir`). 차트 Y축 200/400 동적 |
 | 9 | NIC 텔레메트리 | 4채널 (IC × 2 서버 + Module × 2 서버), 1Hz 폴링, mget_temp + ethtool -m |
 | 10 | 광 트랜시버 | **QSFP56**, Liquid-Cooled |
-| 11 | 호스트 모델 | Server A = `dg5W-H200NVL-4`, Server B = `dg5R-PRO6000SE-10` |
+| 11 | 호스트 모델 | Server A = `dg5W-H200NVL-4`, Server B = `dg5R-PRO6000SE-8` |
 | 12 | 냉각 | NIC IC + 광 트랜시버 모두 Liquid-Cooled (UI에 명시 표기) |
 | 13 | 회사 로고 | ManyCore PNG (white/black 두 버전, mockup 적용 완료) |
 | 14 | SSH 정책 | controller self-SSH 포함 모든 호출을 SSH로 통일 (subprocess 분기 X). known_hosts 사전 등록 |
@@ -91,12 +91,14 @@
    - `scripts/poc.py` CLI (--tool mock|ib_write_bw|ib_read_lat|iperf3)
 7. **다음**: Phase 1 PR 머지 — 사용자 환경에서 `uv sync` + `pytest tests/ -m "not live"` 검증 후 머지
 8. **(라이브 검증, 옵션)** RoCE 전환 + 인터페이스명 받은 후 실 NIC 환경에서 `pytest -m live` + `python scripts/poc.py --tool ib_write_bw --duration 30` 1회 검증, fixture 보강
-9. **Phase 2 시작**: 브랜치 `feature/api-and-sse`
-   - `app/state.py` (SessionManager + queue fan-out)
-   - `app/nic_telemetry.py` (1Hz 폴링, 별도 SSH pool)
-   - `app/api/{health,measure,stream}.py`
-   - `app/main.py` (lifespan + 라우터 등록)
-   - `.github/workflows/ci.yml` (pytest + ruff)
+9. ✅ Phase 2 머지 (PR #7) — FastAPI + SSE + sensors -j 텔레메트리
+10. ✅ Phase 3 SvelteKit 프론트 (`feature/frontend-svelte`):
+    - 7 components (Header, StatusBadge, HardwareDiagram, KpiCards, BandwidthChart, NicTempPanel, ControlPanel)
+    - 3 stores (Svelte 5 runes), utils (sse/api/format), types (api.ts 백엔드 1:1)
+    - `frontend/static/manycore_logo_*.png` mockup→frontend 이동
+    - `app/main.py` StaticFiles 마운트로 `/` 정적 서빙
+    - 빌드 6.88s, 통합 검증 (`/` index + 로고 + `/api/*` 모두 OK)
+11. **다음**: Phase 4 — Docker Compose + systemd + install.sh
 
 ---
 

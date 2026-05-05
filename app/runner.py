@@ -133,16 +133,19 @@ def _build_ib_write_bw_args(
     `-m 4096` (RoCE path MTU): perftest default 1024 → ConnectX-6 HCA max 4096 으로
     명시. 라이브 측정 188 → 196 Gb/s (라인 레이트 98%) 향상.
     """
+    is_server = peer_rdma is None
+    device = settings.nic_device_a if is_server else settings.nic_device_b
+    gid = settings.rdma_gid_index_a if is_server else settings.rdma_gid_index_b
     args = [
         "ib_write_bw",
         "-d",
-        settings.nic_device_a if peer_rdma is None else settings.nic_device_b,
+        device,
         "-F",
         "--report_gbits",
         "-D",
         str(req.duration_sec),
         "-x",
-        str(settings.rdma_gid_index),
+        str(gid),
         "-m",
         "4096",
         "-s",
@@ -160,15 +163,18 @@ def _build_ib_write_bw_args(
 def _build_ib_read_lat_args(
     req: StartRequest, settings: Settings, peer_rdma: str | None
 ) -> list[str]:
+    is_server = peer_rdma is None
+    device = settings.nic_device_a if is_server else settings.nic_device_b
+    gid = settings.rdma_gid_index_a if is_server else settings.rdma_gid_index_b
     args = [
         "ib_read_lat",
         "-d",
-        settings.nic_device_a if peer_rdma is None else settings.nic_device_b,
+        device,
         "-F",
         "-D",
         str(req.duration_sec),
         "-x",
-        str(settings.rdma_gid_index),
+        str(gid),
     ]
     if peer_rdma:
         args.append(peer_rdma)
