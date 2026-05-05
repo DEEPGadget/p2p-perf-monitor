@@ -21,7 +21,7 @@ class TestStartRequest:
         assert req.tool == "ib_write_bw"
         assert req.duration_sec == 60
         assert req.msg_size == 65536
-        assert req.qp_count == 1
+        assert req.qp_count == 4
         assert req.iperf3_streams == 8
         assert req.bidir is False
 
@@ -148,10 +148,10 @@ class TestNicTelemetry:
             server_b_ic_c=64.1,
             server_a_module_c=41.5,
             server_b_module_c=43.0,
-            source="mget_temp+ethtool",
+            source="sensors",
         )
         assert t.server_a_ic_c == 62.3
-        assert t.source == "mget_temp+ethtool"
+        assert t.source == "sensors"
 
     def test_failed_channel_keeps_none(self) -> None:
         t = NicTelemetry(
@@ -160,7 +160,7 @@ class TestNicTelemetry:
             server_b_ic_c=64.1,
             server_a_module_c=None,
             server_b_module_c=43.0,
-            source="sysfs+ethtool",
+            source="sensors",
         )
         assert t.server_a_ic_c is None
         assert t.server_a_module_c is None

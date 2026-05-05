@@ -28,6 +28,104 @@ def _now() -> datetime:
     return datetime.now(UTC)
 
 
+def parse_sysfs_stats(prev_bytes: int, curr_bytes: int, interval_sec: float) -> float:
+    """net statistics 카운터 차분 → Gb/s.
+
+    `/sys/class/net/<iface>/statistics/{tx,rx}_bytes` 두 번 읽어 차분 ÷ 시간.
+    Counter wraparound 거의 없으나 음수 결과는 0으로 방어.
+    interval_sec ≤ 0 도 0 반환.
+    """
+    if interval_sec <= 0:
+        return 0.0
+    delta = curr_bytes - prev_bytes
+    if delta < 0:
+        delta = 0
+    return delta * 8 / interval_sec / 1e9
+
+
+_VALID_SUB_TOOLS = ("ib_write_bw", "ib_read_lat", "iperf3", "mock")
+_PERFTEST_SUBS = ("ib_write_bw", "ib_read_lat")
+
+
+def parse_sensors_json(
+    text: str, pci_chip_prefix: str | None = None
+) -> tuple[float | None, float | None]:
+    """`sensors -j` 출력 → (asic_ic_celsius, module_celsius).
+
+    mlx5 chip 중 `Module0` 키가 있는 chip = 사용 중인 포트 (트랜시버 연결됨).
+    pci_chip_prefix 가 주어지면 해당 chip 만 매칭 (예: "mlx5-pci-0200").
+
+    실패 / 키 부재 시 None 반환 (UI 측에서 직전 값 유지).
+    """
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        return None, None
+    if not isinstance(data, dict):
+        return None, None
+
+    candidates: list[tuple[str, dict]] = []
+    for chip_name, body in data.items():
+        if not isinstance(body, dict):
+            continue
+        if not chip_name.startswith("mlx5-pci-"):
+            continue
+        if pci_chip_prefix and not chip_name.startswith(pci_chip_prefix):
+            continue
+        candidates.append((chip_name, body))
+
+    if not candidates:
+        return None, None
+
+    # Module0 키가 있는 chip 우선 (활성 포트). 없으면 첫 매치
+    selected = next(((c, b) for c, b in candidates if "Module0" in b), candidates[0])
+    body = selected[1]
+
+    ic: float | None = None
+    asic = body.get("asic")
+    if isinstance(asic, dict):
+        v = asic.get("temp1_input")
+        if isinstance(v, (int, float)):
+            ic = float(v)
+
+    module: float | None = None
+    mod = body.get("Module0")
+    if isinstance(mod, dict):
+        v = mod.get("temp2_input")
+        if isinstance(v, (int, float)):
+            module = float(v)
+
+    return ic, module
+
+
+def make_sysfs_event(
+    bw_gbps: float,
+    msg_size: int,
+    sub_tool: str,
+    ts: datetime | None = None,
+) -> MeasurementEvent:
+    """sysfs 폴링 결과 → MeasurementEvent (1초 단위 평균이라 peak=avg)."""
+    sub = sub_tool if sub_tool in _VALID_SUB_TOOLS else None
+    if sub in _PERFTEST_SUBS:
+        category = "perftest"
+    elif sub == "iperf3":
+        category = "iperf3"
+    else:
+        category = "mock"
+    return MeasurementEvent(
+        ts=ts or _now(),
+        msg_size=msg_size,
+        iterations=None,
+        bw_peak_gbps=bw_gbps,
+        bw_avg_gbps=bw_gbps,
+        msg_rate_mpps=None,
+        lat_us=None,
+        lat_p99_us=None,
+        tool_category=category,  # type: ignore[arg-type]
+        sub_tool=sub,  # type: ignore[arg-type]
+    )
+
+
 def parse_ib_write_bw_line(
     line: str,
     bidir: bool = False,

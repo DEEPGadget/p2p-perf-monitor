@@ -27,7 +27,7 @@ ErrorCode = Literal[
     "parse_failed",
 ]
 
-NicSource = Literal["mget_temp+ethtool", "sysfs+ethtool", "mlxlink", "mock"]
+NicSource = Literal["sensors", "mock"]
 
 
 class StartRequest(BaseModel):
@@ -38,7 +38,7 @@ class StartRequest(BaseModel):
     tool: ToolKind = "ib_write_bw"
     duration_sec: int = Field(default=60, ge=5, le=600)
     msg_size: int = 65536
-    qp_count: int = Field(default=1, ge=1, le=16)
+    qp_count: int = Field(default=4, ge=1, le=16)  # 200G HDR 라인 레이트는 4 QP 권장
     iperf3_streams: int = Field(default=8, ge=1, le=32)
     bidir: bool = False
 

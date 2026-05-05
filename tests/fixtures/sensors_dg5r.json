@@ -1,0 +1,14 @@
+{
+  "coretemp-isa-0000": {
+    "Package id 0": {"temp1_input": 39.0}
+  },
+  "mlx5-pci-6400": {
+    "Adapter": "PCI adapter",
+    "asic": {"temp1_input": 38.0, "temp1_crit": 105.0, "temp1_highest": 39.0},
+    "Module0": {"temp2_input": 47.0, "temp2_crit": 70.0, "temp2_highest": 48.0}
+  },
+  "mlx5-pci-6401": {
+    "Adapter": "PCI adapter",
+    "asic": {"temp1_input": 38.0, "temp1_crit": 105.0, "temp1_highest": 39.0}
+  }
+}
