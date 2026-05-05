@@ -167,8 +167,14 @@ def _build_ib_read_lat_args(
     settings: Settings,
     peer_rdma: str | None,
     *,
+    n_iter: int | None = None,
     duration: int | None = None,
 ) -> list[str]:
+    """ib_read_lat 인자 빌드.
+
+    n_iter 가 주어지면 `-n <iter>` (iterations 모드, 매우 짧음, ~수십 ms) →
+    5Hz 시계열에 적합. 그 외엔 `-D <sec>` (duration 모드).
+    """
     is_server = peer_rdma is None
     device = settings.nic_device_a if is_server else settings.nic_device_b
     gid = settings.rdma_gid_index_a if is_server else settings.rdma_gid_index_b
@@ -177,11 +183,13 @@ def _build_ib_read_lat_args(
         "-d",
         device,
         "-F",
-        "-D",
-        str(duration if duration is not None else req.duration_sec),
         "-x",
         str(gid),
     ]
+    if n_iter is not None:
+        args += ["-n", str(n_iter)]
+    else:
+        args += ["-D", str(duration if duration is not None else req.duration_sec)]
     if peer_rdma:
         args.append(peer_rdma)
     return args
@@ -354,60 +362,77 @@ async def _run_with_sysfs(req: StartRequest, settings: Settings) -> AsyncIterato
 # ─────────────────────────── LAT 측정 (stdout 파싱) ───────────────────────────
 
 
-_LAT_SUB_DURATION = 1  # 초 단위 sub-iteration
-_LAT_SETUP_SLEEP = 0.5  # server listen 안정화 대기 (perftest QP 생성 + GID 교환)
-_LAT_ITER_TIMEOUT = 8.0  # 한 iteration 의 wallclock 상한
+_LAT_SAMPLE_ITER = 1000   # ib_read_lat -n 1000 (~수십 ms 측정)
+_LAT_RATE_HZ = 5          # BW 폴링과 동일한 5Hz
+_LAT_SETUP_SLEEP = 0.15   # server listen 안정화 대기
+_LAT_ITER_TIMEOUT = 4.0   # 한 sample 의 wallclock 상한
 
 
 async def _run_perftest_lat(
     req: StartRequest, settings: Settings
 ) -> AsyncIterator[MeasurementEvent]:
-    """`ib_read_lat` 짧은 측정 반복으로 시계열 latency yield.
+    """`ib_read_lat` 짧은 측정 반복으로 5Hz 시계열 latency yield.
 
-    perftest `ib_read_lat -D <sec>` 는 종료 시 결과 1줄만 출력 → 시계열
-    임팩트 부족. duration_sec 동안 1초 sub-measurement 반복 → 1Hz 흐름.
-    매 iteration 마다 SSH connection·process 모두 새로 만들어 단순화·견고화
-    (process 누수 / stream 동시성 이슈 회피). 실패 iteration 은 skip 하고
-    다음 iteration 시도.
+    `-n 1000` (수십 ms) iteration 모드 + 호스트당 SSH connection 1회만 만들고
+    재사용. 매 sample 마다 process 만 새로 spawn (직렬 → asyncssh stream
+    동시성 이슈 회피). BW 폴링(5Hz)과 동일 갱신 빈도.
     """
     ssh_kw = _ssh_kwargs(settings)
-    iterations = max(1, req.duration_sec // _LAT_SUB_DURATION)
+    iterations = max(1, req.duration_sec * _LAT_RATE_HZ)
+    sample_period = 1.0 / _LAT_RATE_HZ
     log = structlog.get_logger("runner.lat")
 
-    for i in range(iterations):
-        server_args = _build_ib_read_lat_args(
-            req, settings, peer_rdma=None, duration=_LAT_SUB_DURATION
+    sa_conn = None
+    sb_conn = None
+    try:
+        sa_conn, sb_conn = await asyncio.gather(
+            asyncssh.connect(settings.server_a_host, **ssh_kw),
+            asyncssh.connect(settings.server_b_host, **ssh_kw),
         )
-        client_args = _build_ib_read_lat_args(
-            req,
-            settings,
-            peer_rdma=settings.server_a_rdma_ip,
-            duration=_LAT_SUB_DURATION,
-        )
-
-        evt = await _run_lat_iteration(settings, ssh_kw, server_args, client_args, log, i)
-        if evt is not None:
-            yield evt
+        loop = asyncio.get_running_loop()
+        for i in range(iterations):
+            sample_start = loop.time()
+            server_args = _build_ib_read_lat_args(
+                req, settings, peer_rdma=None, n_iter=_LAT_SAMPLE_ITER
+            )
+            client_args = _build_ib_read_lat_args(
+                req,
+                settings,
+                peer_rdma=settings.server_a_rdma_ip,
+                n_iter=_LAT_SAMPLE_ITER,
+            )
+            evt = await _run_lat_iteration(
+                sa_conn, sb_conn, server_args, client_args, log, i
+            )
+            if evt is not None:
+                yield evt
+            # 다음 sample 까지 일정 간격 유지 (실측이 빠르면 sleep, 느리면 즉시)
+            elapsed = loop.time() - sample_start
+            if elapsed < sample_period:
+                await asyncio.sleep(sample_period - elapsed)
+    finally:
+        for conn in (sa_conn, sb_conn):
+            if conn is None:
+                continue
+            with suppress(Exception):
+                conn.close()
+                await conn.wait_closed()
 
 
 async def _run_lat_iteration(
-    settings: Settings,
-    ssh_kw: dict[str, Any],
+    sa_conn: asyncssh.SSHClientConnection,
+    sb_conn: asyncssh.SSHClientConnection,
     server_args: list[str],
     client_args: list[str],
     log: Any,
     idx: int,
 ) -> MeasurementEvent | None:
-    """단일 sub-iteration. 실패해도 raise 하지 않고 None 반환."""
+    """단일 sample. 실패해도 raise 하지 않고 None 반환."""
     try:
-        async with (
-            asyncssh.connect(settings.server_a_host, **ssh_kw) as sa_conn,
-            asyncssh.connect(settings.server_b_host, **ssh_kw) as sb_conn,
-        ):
-            return await asyncio.wait_for(
-                _do_lat_iteration(sa_conn, sb_conn, server_args, client_args, log, idx),
-                timeout=_LAT_ITER_TIMEOUT,
-            )
+        return await asyncio.wait_for(
+            _do_lat_iteration(sa_conn, sb_conn, server_args, client_args, log, idx),
+            timeout=_LAT_ITER_TIMEOUT,
+        )
     except TimeoutError:
         log.warning("lat_iter_timeout", idx=idx)
         return None
