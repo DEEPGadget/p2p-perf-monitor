@@ -68,14 +68,15 @@
   </main>
   <footer>
     <div class="meta">
-      <span>NIC mlx5_0 ↔ rocep100s0f0</span>
+      <span>NIC mlx5_0 ↔ mlx5_0</span>
       <span>·</span>
       <span>RoCE v2</span>
       <span>·</span>
       <span>MTU 9000</span>
     </div>
-    <div class="meta">
-      <span>v0.1</span>
+    <div class="meta brand">
+      <span class="version">v0.1</span>
+      <img src="/dg_logo.png" alt="deep gadget" class="brand-logo" />
     </div>
   </footer>
 </div>
@@ -116,5 +117,19 @@
   .meta {
     display: flex;
     gap: 16px;
+    align-items: center;
+  }
+  .meta.brand { gap: 14px; }
+  .brand-logo {
+    height: 22px;
+    width: auto;
+    display: block;
+    /* 흰 배경 PNG 라도 dark 테마에 자연스럽게 — 명도 유지하며 파란색 보존 */
+    filter: brightness(1.05);
+  }
+  .meta .version {
+    font-size: 11px;
+    color: var(--color-muted);
+    letter-spacing: 0.05em;
   }
 </style>
