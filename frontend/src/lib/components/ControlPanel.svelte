@@ -183,7 +183,7 @@
     box-shadow: 0 0 24px rgba(239, 68, 68, 0.5);
   }
   .brand-logo {
-    height: 26px;
+    height: 36px;
     width: auto;
     display: block;
     margin-right: 8px;
