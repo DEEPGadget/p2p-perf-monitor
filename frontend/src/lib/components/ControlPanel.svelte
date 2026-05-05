@@ -16,7 +16,7 @@
     { label: '256K', val: 262144 },
     { label: '1M', val: 1048576 },
   ];
-  const DURATIONS = [30, 60, 120, 300];
+  const DURATIONS = [30, 60, 120, 300, 600, 1800, 7200];
 
   let toolIdx = $state(0);
   let sizeIdx = $state(3); // 64K
@@ -25,6 +25,9 @@
   const tool = $derived(TOOLS[toolIdx]);
   const size = $derived(SIZES[sizeIdx]);
   const dur = $derived(DURATIONS[durIdx]);
+  const durLabel = $derived(
+    dur >= 3600 ? `${dur / 3600}h` : dur >= 60 ? `${dur / 60}m` : `${dur}s`,
+  );
   const dirLabel = $derived(bidir ? 'BIDIR' : 'UNI');
   const isRunning = $derived(sessionState === 'running' || sessionState === 'connecting');
 
@@ -80,7 +83,7 @@
   <button class="control-group" type="button" onclick={() => (durIdx = cycle(DURATIONS, durIdx))} disabled={isRunning}>
     <div>
       <div class="control-label">DURATION</div>
-      <div class="control-value">{dur}s</div>
+      <div class="control-value">{durLabel}</div>
     </div>
     <span class="control-arrow">▾</span>
   </button>

@@ -42,12 +42,12 @@ class TestStartRequest:
         req = StartRequest(msg_size=size)
         assert req.msg_size == size
 
-    @pytest.mark.parametrize("dur", [4, 0, -1, 601, 9999])
+    @pytest.mark.parametrize("dur", [4, 0, -1, 7201, 99999])
     def test_duration_out_of_range_raises(self, dur: int) -> None:
         with pytest.raises(ValidationError):
             StartRequest(duration_sec=dur)
 
-    @pytest.mark.parametrize("dur", [5, 60, 600])
+    @pytest.mark.parametrize("dur", [5, 60, 600, 7200])
     def test_duration_in_range_passes(self, dur: int) -> None:
         req = StartRequest(duration_sec=dur)
         assert req.duration_sec == dur
