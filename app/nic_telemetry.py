@@ -146,9 +146,7 @@ class NicTelemetryPoller:
         except asyncio.CancelledError:
             raise
 
-    async def _read_one(
-        self, host: str, ssh_kw: dict
-    ) -> tuple[float | None, float | None]:
+    async def _read_one(self, host: str, ssh_kw: dict) -> tuple[float | None, float | None]:
         """호스트에서 sensors -j 한 번 실행 → (ic, module). 실패 시 (None, None)."""
         try:
             async with asyncssh.connect(host, **ssh_kw) as conn:
