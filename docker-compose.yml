@@ -1,0 +1,30 @@
+# 정본 사양 → docs/implementation-plan.md §Phase 4
+#
+# 단일 컨테이너, host network 미사용. 8080:8080 publish.
+# /etc/p2p-monitor 에 SSH 키·known_hosts·.env 보관 (호스트 측 700 권한),
+# 컨테이너에 ro 마운트.
+services:
+  p2p-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: p2p-monitor:latest
+    container_name: p2p-monitor
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - /etc/p2p-monitor/.env
+    environment:
+      # SSH 키·known_hosts 는 컨테이너 안에서 절대경로로 참조.
+      # /etc/p2p-monitor/.env 의 SSH_KEY_PATH / SSH_KNOWN_HOSTS 에는
+      # 아래 컨테이너 측 경로를 박아둘 것.
+      SSH_KEY_PATH: /etc/p2p-monitor/p2p_monitor_ed25519
+      SSH_KNOWN_HOSTS: /etc/p2p-monitor/known_hosts_p2p
+    volumes:
+      - /etc/p2p-monitor:/etc/p2p-monitor:ro
+    # journald 통일 (별도 파일 마운트 없이 docker logs / journalctl 로 통일)
+    logging:
+      driver: journald
+      options:
+        tag: p2p-monitor
