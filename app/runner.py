@@ -429,23 +429,19 @@ async def _do_lat_iteration(
         await asyncio.sleep(_LAT_SETUP_SLEEP)
         client_proc = await sb_conn.create_process(shlex.join(client_args))
         try:
-            await client_proc.wait()
-            stdout = client_proc.stdout
-            stdout_text = ""
-            if stdout is not None:
-                with suppress(Exception):
-                    stdout_text = await stdout.read()
+            # asyncssh: wait() 가 stdout/stderr 를 자동 capture → completed 객체로
+            # 받아야 한다. 별도 stdout.read() 는 wait 후 빈 문자열 반환.
+            completed = await client_proc.wait()
+            stdout_text = completed.stdout if isinstance(completed.stdout, str) else ""
+            stderr_text = completed.stderr if isinstance(completed.stderr, str) else ""
             for raw in stdout_text.splitlines():
                 evt = parse_ib_read_lat_line(raw.rstrip())
                 if evt is not None:
                     return evt
-            stderr_text = ""
-            if client_proc.stderr is not None:
-                with suppress(Exception):
-                    stderr_text = await client_proc.stderr.read()
             log.info(
                 "lat_iter_no_data",
                 idx=idx,
+                exit=completed.exit_status,
                 stdout_tail=stdout_text[-200:],
                 stderr_tail=stderr_text[-200:],
             )
