@@ -36,9 +36,15 @@ class Settings(BaseSettings):
     server_a_rdma_ip: str
     server_b_rdma_ip: str
 
-    # ─── NIC 디바이스 (양쪽 동일 포트, RoCE 전환 후 확정) ───
+    # ─── NIC RDMA device (perftest -d 인자) ───
+    # dg5W: 전통 명명 mlx5_0
+    # dg5R: udev 'rocep<bus_dec>s<slot>f<func>' → rocep100s0f0
     nic_device_a: str = "mlx5_0"
-    nic_device_b: str = "mlx5_0"
+    nic_device_b: str = "rocep100s0f0"
+
+    # ─── NIC netdev 인터페이스 (sysfs BW 폴링 / ethtool 트랜시버 온도) ───
+    server_a_netdev: str = "enp2s0f0np0"
+    server_b_netdev: str = "ens7f0np0"
 
     # ─── RoCE / RDMA ───
     rdma_gid_index: int = 3
