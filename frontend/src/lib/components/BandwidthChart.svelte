@@ -9,25 +9,51 @@
   let container: HTMLDivElement | undefined = $state();
   let chart: import('echarts').ECharts | null = null;
 
-  // 데이터 기반 동적 yMax — 데이터 있으면 항상 peak 기준으로 zoom.
-  // 데이터 없을 때만 모드별 baseline (UNI=200, BIDIR=400) 표시.
-  const hasData = $derived(measurementStore.values.length > 0);
-  const dataPeak = $derived(
-    hasData ? Math.max(...measurementStore.values) : 0,
+  // mode 별 시계열 분기
+  const mode = $derived(measurementStore.mode);
+  const labels = $derived(
+    mode === 'lat' ? measurementStore.latLabels : measurementStore.labels,
   );
+  const values = $derived(
+    mode === 'lat' ? measurementStore.latValues : measurementStore.values,
+  );
+  const hasData = $derived(values.length > 0);
+  const dataPeak = $derived(hasData ? Math.max(...values) : 0);
+
+  // BW: Gb/s, lat: µs (peak ≥ 1000 이면 ms 로 표기 변환)
+  const titleText = $derived.by(() => {
+    if (mode === 'lat') {
+      const unit = dataPeak >= 1000 ? 'ms' : 'µs';
+      return `LATENCY (${unit}) — LAST 60s`;
+    }
+    return 'BANDWIDTH (Gb/s) — LAST 60s';
+  });
+
   const yMax = $derived.by(() => {
-    if (!hasData) return bidir ? 400 : 200; // 측정 시작 전 baseline
-    const padded = Math.max(1, dataPeak) * 1.15; // 15% headroom (peak 0 이라도 1 단위로)
-    if (padded <= 10) return Math.max(2, Math.ceil(padded));
+    if (!hasData) return mode === 'lat' ? 5 : bidir ? 400 : 200;
+    const padded = Math.max(0.1, dataPeak) * 1.2;
+    if (padded <= 1) return Math.ceil(padded * 10) / 10;
+    if (padded <= 10) return Math.max(1, Math.ceil(padded));
     if (padded <= 50) return Math.ceil(padded / 5) * 5;
     return Math.ceil(padded / 50) * 50;
   });
-  const yInterval = $derived(
-    yMax <= 10 ? Math.max(1, Math.floor(yMax / 4))
-    : yMax <= 50 ? 10
-    : yMax <= 200 ? 50
-    : 100,
-  );
+  const yInterval = $derived.by(() => {
+    if (yMax <= 1) return Math.max(0.1, yMax / 4);
+    if (yMax <= 10) return Math.max(1, Math.floor(yMax / 4));
+    if (yMax <= 50) return 10;
+    if (yMax <= 200) return 50;
+    return 100;
+  });
+  // µs → ms 자동 표기 (1000 이상이면 ms 단위 라벨)
+  const yFormatter = $derived.by(() => {
+    if (mode === 'lat' && dataPeak >= 1000) {
+      return (v: number) => `${(v / 1000).toFixed(2)}`;
+    }
+    if (mode === 'lat') {
+      return (v: number) => v.toFixed(yMax <= 5 ? 2 : yMax <= 20 ? 1 : 0);
+    }
+    return (v: number) => `${v}`;
+  });
 
   function baseOption() {
     return {
@@ -51,7 +77,12 @@
         min: 0,
         max: yMax,
         interval: yInterval,
-        axisLabel: { color: '#a1a1aa', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, formatter: '{value}' },
+        axisLabel: {
+          color: '#a1a1aa',
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: 11,
+          formatter: yFormatter,
+        },
         axisLine: { show: false },
         axisTick: { show: false },
         splitLine: { lineStyle: { color: '#1c1c1c' } },
@@ -103,29 +134,28 @@
   // NOTE: $effect 는 첫 run 에 read 한 reactive value 만 tracking 한다.
   // chart guard 가 store read 를 가리면 deps 가 영원히 등록 안 되어 재실행 X.
   $effect(() => {
-    const labels = measurementStore.labels;
-    const values = measurementStore.values;
+    const _labels = labels;
+    const _values = values;
     if (!chart) return;
     chart.setOption(
-      { xAxis: { data: labels }, series: [{ data: values }] },
+      { xAxis: { data: _labels }, series: [{ data: _values }] },
       { lazyUpdate: true },
     );
   });
 
-  // bidir / dataPeak 변화에 따른 Y축 갱신
-  // NOTE: chart?.setOption(...) 의 인자 평가는 chart 가 null 이면 short-circuit 되어
-  // yMax/yInterval read 가 누락 → tracking 안 됨. read 우선.
+  // mode / yMax 변화에 따른 Y축 + formatter 갱신
   $effect(() => {
     const max = yMax;
     const interval = yInterval;
+    const fmt = yFormatter;
     if (!chart) return;
-    chart.setOption({ yAxis: { max, interval } });
+    chart.setOption({ yAxis: { max, interval, axisLabel: { formatter: fmt } } });
   });
 </script>
 
 <section class="chart-wrap">
   <div class="chart-header">
-    <div class="chart-title">BANDWIDTH (Gb/s) — LAST 60s</div>
+    <div class="chart-title">{titleText}</div>
     <div class="chart-live" style:opacity={sessionStore.state === 'running' ? 1 : 0}>
       <span class="dot"></span>
       <span>LIVE</span>
